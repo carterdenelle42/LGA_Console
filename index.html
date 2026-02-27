@@ -1,28 +1,108 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>LGA Console</title>
+  <link rel="stylesheet" href="style.css" />
 </head>
 <body>
-  <h1>LGA Console</h1>
-  <div id="debug" style="white-space:pre-wrap; font-family:monospace; border:1px solid #ccc; padding:10px;"></div>
+  <div class="screen">
+    <div class="topbar">
+      <div class="brand">IDS4 • LGA CONSOLE</div>
+      <div class="clock" id="clock">--:--:--</div>
+    </div>
+
+    <div class="mainGrid">
+      <!-- LEFT COLUMN: inputs -->
+      <div class="box boxInputs">
+        <div class="boxTitle">INPUTS</div>
+
+        <div class="formGrid">
+          <div class="field">
+            <div class="label">LGA ATIS CONFIG</div>
+            <select id="lgaConfig"></select>
+          </div>
+
+          <div class="field">
+            <div class="label">JFK CONFIG</div>
+            <select id="jfkConfig"></select>
+          </div>
+
+          <div class="field">
+            <div class="label">EXIT FIX</div>
+            <input id="exitFix" placeholder="WHITE" />
+          </div>
+
+          <div class="field">
+            <div class="label">ACFT TYPE</div>
+            <select id="acftType">
+              <option value="Jet">JET</option>
+              <option value="Prop">PROP</option>
+              <option value="*">*</option>
+            </select>
+          </div>
+
+          <div class="field">
+            <div class="label">DEST</div>
+            <input id="dest" placeholder="KPHL" />
+          </div>
+
+          <button id="runBtn" type="button" class="btnRun">EXEC</button>
+        </div>
+      </div>
+
+      <!-- CENTER COLUMN: computed + departure + navaid -->
+      <div class="box boxComputed">
+        <div class="boxTitle">STATUS / COMPUTED</div>
+        <pre id="computedOut" class="console"></pre>
+      </div>
+
+      <div class="box boxDeparture">
+        <div class="boxTitle">DEPARTURE PROCEDURE</div>
+        <pre id="depOut" class="console"></pre>
+      </div>
+
+      <div class="box boxNavaid">
+        <div class="boxTitle">NAVAID / AIRPORT INFO</div>
+
+        <div class="navaidGrid">
+          <div class="navaidLeft">
+            <div class="navaidSectionTitle">SELECTED</div>
+            <pre id="navaidInfo" class="console navaidConsole"></pre>
+
+            <div class="navaidSectionTitle">OVERLAPS (NEAREST FIRST)</div>
+            <div id="navaidOverlaps" class="navaidOverlaps"></div>
+          </div>
+
+          <div class="navaidRight">
+            <div class="navaidSectionTitle">SEARCH (NAVAIDS + AIRPORTS)</div>
+            <input id="navaidSearch" placeholder="ident / name / type (navaid or airport)" />
+            <div id="navaidResults" class="navaidResults"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- RIGHT COLUMN: routes -->
+      <div class="box boxRoutes">
+        <div class="boxTitle">PRD ROUTES</div>
+        <div class="tableWrap">
+          <div id="routesOut"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
 
   <script>
-    // PROOF the script is running:
-    alert("Script is running.");
-
-    const departureMatrix = [
-      { DEP_RWY:"13", PRIORITY:10, OUTPUT:"LGA7.FLUSHING" },
-      { DEP_RWY:"22", PRIORITY:20, OUTPUT:"HOPEA#" }
-    ];
-
-    console.log("HELLO FROM CONSOLE");
-    console.log("Rows:", departureMatrix.length, departureMatrix);
-
-    document.getElementById("debug").textContent =
-      "Script ran.\n" +
-      "Rows: " + departureMatrix.length + "\n\n" +
-      JSON.stringify(departureMatrix, null, 2);
+    function pad(n){ return String(n).padStart(2,"0"); }
+    function tick(){
+      const d = new Date();
+      document.getElementById("clock").textContent =
+        `${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
+    }
+    tick(); setInterval(tick, 1000);
   </script>
 </body>
 </html>
