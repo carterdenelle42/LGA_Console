@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>LGA Console</title>
+</head>
+<body>
+  <h1>LGA Console</h1>
+  <div id="debug" style="white-space:pre-wrap; font-family:monospace; border:1px solid #ccc; padding:10px;"></div>
+
+  <script>
+    // PROOF the script is running:
+    alert("Script is running.");
+
+    const departureMatrix = [
+      { DEP_RWY:"13", PRIORITY:10, OUTPUT:"LGA7.FLUSHING" },
+      { DEP_RWY:"22", PRIORITY:20, OUTPUT:"HOPEA#" }
+    ];
+
+    console.log("HELLO FROM CONSOLE");
+    console.log("Rows:", departureMatrix.length, departureMatrix);
+
+    document.getElementById("debug").textContent =
+      "Script ran.\n" +
+      "Rows: " + departureMatrix.length + "\n\n" +
+      JSON.stringify(departureMatrix, null, 2);
+  </script>
+</body>
+</html>
