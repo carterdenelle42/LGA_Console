@@ -1,99 +1,172 @@
+/* style.css */
 :root{
   --bg:#000;
-  --panel:#050505;
-  --panel2:#0a0a0a;
 
-  --line:#30ff55;
-  --lineDim:#1e8f36;
-  --text:#d9ffd9;
+  --yellow:#FFCC00;
+  --yellowSoft:rgba(255,204,0,.35);
+  --yellowGlow:rgba(255,204,0,.18);
 
-  --warn:#ffe94a;
-  --cyan:#00e5ff;
+  --blue:#0B2F6B;
+  --blueSoft:rgba(11,47,107,.45);
+  --blueGlow:rgba(18,60,140,.25);
+
+  --text:#f5f5f5;
 
   --font: ui-monospace, Menlo, Consolas, monospace;
+
+  --glassBg: rgba(12,16,24,.60);
+  --glassBg2: rgba(8,12,20,.75);
+
+  --whiteLine: rgba(255,255,255,.55);
+
+  /* flight category colors */
+  --catVFR:  #30ff55;
+  --catMVFR: #5aa7ff;
+  --catIFR:  #ff4040;
+  --catLIFR: #ff4fd8;
+
+  /* edge buffer around UI */
+  --edgePad: 12px;
 }
 
 *{ box-sizing:border-box; }
 
 body{
   margin:0;
-  background: var(--bg);
+  background:
+    radial-gradient(circle at 10% 0%, rgba(255,204,0,.08) 0%, transparent 45%),
+    radial-gradient(circle at 90% 15%, rgba(18,60,140,.15) 0%, transparent 55%),
+    linear-gradient(180deg, #05070c 0%, #000 100%);
   color: var(--text);
   font-family: var(--font);
+  overflow-x:hidden;
 }
 
+/* subtle scanlines */
+body::after{
+  content:"";
+  position:fixed;
+  inset:0;
+  pointer-events:none;
+  background: repeating-linear-gradient(
+    to bottom,
+    rgba(255,255,255,.03) 0px,
+    rgba(255,255,255,.03) 1px,
+    transparent 3px,
+    transparent 6px
+  );
+  opacity:.08;
+}
+
+/* FULL-WIDTH APP WITH EDGE BUFFER */
 .screen{
-  max-width: 1320px;
-  margin: 0 auto;
-  padding: 12px;
+  width: 100%;
+  max-width: none;
+  margin: 0;
+  padding: var(--edgePad);
 }
 
+/* --- TOP BAR --- */
 .topbar{
   display:flex;
   justify-content:space-between;
   align-items:center;
-  padding: 8px 10px;
-  background: linear-gradient(180deg, #101010, #050505);
-  border: 2px solid var(--lineDim);
-  box-shadow: 0 0 0 1px #000 inset;
+  padding:10px 14px;
+
+  background: linear-gradient(180deg, rgba(20,30,50,.85), rgba(8,12,22,.85));
+  border:1px solid var(--blueSoft);
+  border-radius:10px;
+
+  box-shadow:
+    0 0 20px var(--blueGlow),
+    0 0 0 1px rgba(0,0,0,.7) inset;
+
+  backdrop-filter: blur(10px);
   margin-bottom: 10px;
-  border-radius: 2px;
 }
 
 .brand{
-  letter-spacing: .14em;
-  font-weight: 700;
-  color: var(--line);
-  text-transform: uppercase;
+  letter-spacing:.16em;
+  font-weight:900;
+  color:var(--yellow);
+  text-transform:uppercase;
+  text-shadow:0 0 12px var(--yellowGlow);
 }
 
 .clock{
-  font-size: 26px;
-  font-weight: 800;
-  color: #e8ffe8;
-  letter-spacing: .08em;
-  text-shadow: 0 0 10px rgba(48,255,85,.25);
+  font-size:26px;
+  font-weight:900;
+  color:var(--yellow);
+  letter-spacing:.08em;
 }
 
-/* layout */
+/* 3 equal columns */
 .mainGrid{
   display:grid;
-  grid-template-columns: 360px 1fr 520px;
-  grid-template-rows: auto auto auto;
+  grid-template-columns: 1fr 1fr 1fr;
   gap: 10px;
 }
 
 @media (max-width: 1200px){
   .mainGrid{
     grid-template-columns: 1fr;
-    grid-template-rows: auto;
   }
 }
 
+/* placement */
+.boxNavaid{ grid-column: 1; }
+.boxMain{ grid-column: 2; }
+
+.rightStack{
+  grid-column: 3;
+  display:flex;
+  flex-direction:column;
+  gap: 10px;
+}
+
+/* --- GLASS PANELS --- */
 .box{
-  background: linear-gradient(180deg, rgba(48,255,85,.05), transparent 25%), var(--panel);
-  border: 2px solid var(--lineDim);
-  box-shadow: 0 0 0 1px #000 inset, 0 0 18px rgba(48,255,85,.08);
-  padding: 10px;
-  min-height: 120px;
-  border-radius: 2px;
+  background:
+    linear-gradient(180deg, rgba(255,255,255,.05), transparent 40%),
+    var(--glassBg);
+
+  border:1px solid var(--blueSoft);
+  border-radius:12px;
+  padding:12px;
+
+  box-shadow:
+    0 0 24px var(--blueGlow),
+    0 0 0 1px rgba(0,0,0,.65) inset;
+
+  backdrop-filter: blur(14px);
 }
 
 .boxTitle{
-  font-size: 12px;
-  letter-spacing: .22em;
-  color: var(--line);
-  text-transform: uppercase;
-  margin-bottom: 8px;
-  border-bottom: 1px solid rgba(48,255,85,.35);
-  padding-bottom: 6px;
+  font-size:12px;
+  letter-spacing:.24em;
+  color:var(--yellow);
+  text-transform:uppercase;
+  margin-bottom:10px;
+  border-bottom:1px solid var(--yellowSoft);
+  padding-bottom:6px;
+  font-weight:900;
 }
 
-.boxInputs{ grid-column: 1; grid-row: 1 / span 3; }
-.boxComputed{ grid-column: 2; grid-row: 1; }
-.boxDeparture{ grid-column: 2; grid-row: 2; }
-.boxNavaid{ grid-column: 2; grid-row: 3; }
-.boxRoutes{ grid-column: 3; grid-row: 1 / span 3; }
+/* section headings inside combined window */
+.sectionTitle{
+  font-size:12px;
+  letter-spacing:.18em;
+  color: rgba(255,255,255,.86);
+  text-transform:uppercase;
+  font-weight:900;
+  margin: 6px 0 8px;
+}
+
+.dividerLine{
+  border-top: 1px solid var(--whiteLine);
+  opacity: .55;
+  margin: 12px 0;
+}
 
 /* inputs */
 .formGrid{
@@ -102,62 +175,129 @@ body{
   gap: 10px;
 }
 
+/* a little tighter inside main box */
+.formGridMain{
+  margin-bottom: 4px;
+}
+
 .field .label{
   font-size: 11px;
-  color: #bfffbf;
+  color: rgba(255,255,255,.8);
   letter-spacing: .14em;
   margin-bottom: 6px;
 }
 
 input, select{
-  width: 100%;
-  padding: 10px 10px;
-  background: #020202;
-  border: 2px solid rgba(48,255,85,.45);
-  color: var(--text);
-  font-family: var(--font);
-  border-radius: 2px;
-  outline: none;
+  width:100%;
+  padding:10px;
+
+  background:rgba(5,8,15,.65);
+  border:1px solid var(--blueSoft);
+  color:var(--text);
+  font-family:var(--font);
+  border-radius:10px;
+  outline:none;
+
+  box-shadow:
+    0 0 10px rgba(18,60,140,.15),
+    0 0 0 1px rgba(0,0,0,.65) inset;
+
+  backdrop-filter: blur(8px);
 }
 
 input:focus, select:focus{
-  border-color: var(--warn);
-  box-shadow: 0 0 0 2px rgba(255,233,74,.15);
+  border-color:var(--yellow);
+  box-shadow:
+    0 0 0 2px rgba(255,204,0,.15),
+    0 0 16px var(--yellowGlow);
 }
 
+/* buttons */
 .btnRun{
-  margin-top: 2px;
-  padding: 12px 10px;
-  background: #081108;
-  border: 2px solid var(--warn);
-  color: var(--warn);
-  font-weight: 800;
-  letter-spacing: .18em;
-  border-radius: 2px;
-  cursor: pointer;
-  text-transform: uppercase;
+  padding:12px;
+  background:linear-gradient(180deg, rgba(255,204,0,.15), rgba(255,204,0,.05));
+  border:1px solid var(--yellow);
+  color:var(--yellow);
+  font-weight:900;
+  letter-spacing:.18em;
+  border-radius:12px;
+  cursor:pointer;
+  text-transform:uppercase;
+  box-shadow:0 0 18px var(--yellowGlow);
 }
 
-.btnRun:hover{ filter: brightness(1.15); }
+.btnRun:hover{ background:rgba(255,204,0,.18); }
 
+.btnSmall{
+  padding:10px 12px;
+  background:rgba(255,204,0,.10);
+  border:1px solid rgba(255,204,0,.55);
+  color:var(--yellow);
+  font-weight:900;
+  letter-spacing:.10em;
+  border-radius:10px;
+  cursor:pointer;
+  text-transform:uppercase;
+}
+
+.btnSmall:hover{ background:rgba(255,204,0,.16); }
+
+/* console blocks */
 .console{
   margin:0;
-  padding: 10px;
-  background: var(--panel2);
-  border: 1px solid rgba(48,255,85,.35);
-  color: #eaffea;
+  padding:12px;
+  background:var(--glassBg2);
+  border:1px solid var(--blueSoft);
+  border-radius:12px;
+
+  box-shadow:
+    0 0 20px var(--blueGlow),
+    0 0 0 1px rgba(0,0,0,.65) inset;
+
+  backdrop-filter: blur(12px);
+
   font-size: 13px;
-  line-height: 1.25;
+  line-height: 1.3;
   white-space: pre-wrap;
-  min-height: 140px;
+
+  min-height: unset;
+}
+
+/* if a panel gets huge, scroll instead of stretching forever */
+.wxConsole,
+.runwayConsole,
+.rvrConsole{
+  max-height: 260px;
+  overflow:auto;
+}
+
+/* departure highlight */
+.depConsole{
+  border-color: rgba(255,204,0,.45);
+}
+
+/* PROCEDURE output highlighting */
+.depLabel{
+  color: rgba(255,255,255,.9);
+  font-weight: 900;
+  letter-spacing: .08em;
+}
+.depValue{
+  color: rgba(120,180,255,1);
+  font-weight: 900;
+  text-shadow: 0 0 12px rgba(18,60,140,.18);
+}
+.depNotes{
+  color: rgba(255,255,255,.85);
 }
 
 /* routes area */
 .tableWrap{
   overflow-x:auto;
-  background: var(--panel2);
-  border: 1px solid rgba(48,255,85,.35);
-  padding: 6px;
+  background: transparent;
+  border: 1px solid var(--blueSoft);
+  border-radius: 12px;
+  padding: 8px;
 }
 
 .routesTable{
@@ -169,47 +309,43 @@ input:focus, select:focus{
 .routesTable th,
 .routesTable td{
   padding: 8px 10px;
-  border-bottom: 1px solid rgba(48,255,85,.25);
+  border-bottom: 1px solid rgba(255,204,0,.12);
   white-space: nowrap;
   font-size: 13px;
 }
 
 .routesTable th{
-  color: var(--warn);
-  font-weight: 800;
-  letter-spacing: .14em;
+  color:var(--yellow);
+  font-weight:900;
+  border-bottom:1px solid var(--yellowSoft);
+  letter-spacing:.14em;
   text-transform: uppercase;
-  border-bottom: 2px solid rgba(255,233,74,.45);
 }
 
 .routesTable tr:hover td{
-  background: rgba(48,255,85,.06);
+  background:rgba(255,204,0,.05);
 }
 
-.routesTable td:first-child{
-  color: var(--line);
-  text-shadow: 0 0 8px rgba(48,255,85,.14);
-}
-
-/* clickable navaid tokens in routes */
+/* tokens */
 .navaidToken{
-  color: var(--cyan);
-  cursor: pointer;
+  color: rgba(120,180,255,1);
+  font-weight:900;
+  cursor:pointer;
   text-decoration: underline;
   text-underline-offset: 2px;
 }
-.navaidToken:hover{ filter: brightness(1.25); }
+.navaidToken:hover{ color: var(--yellow); }
 
-/* clickable airport tokens in routes */
 .airportToken{
-  color: var(--warn);
-  cursor: pointer;
+  color:var(--yellow);
+  font-weight:900;
+  cursor:pointer;
   text-decoration: underline;
   text-underline-offset: 2px;
 }
-.airportToken:hover{ filter: brightness(1.15); }
+.airportToken:hover{ filter:brightness(1.15); }
 
-/* NAVAID PANEL (always visible) */
+/* NAVAID PANEL */
 .navaidGrid{
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -221,66 +357,248 @@ input:focus, select:focus{
 }
 
 .navaidSectionTitle{
-  color: var(--warn);
-  letter-spacing: .18em;
+  color:var(--yellow);
+  letter-spacing:.18em;
   font-size: 12px;
   text-transform: uppercase;
   margin: 6px 0;
   font-weight: 900;
 }
 
-.navaidConsole{
-  min-height: 120px;
-}
+.navaidConsole{ min-height: 120px; }
 
 .navaidOverlaps{
-  border: 1px solid rgba(48,255,85,.35);
-  background: #0a0a0a;
-  min-height: 60px;
-  max-height: 120px;
-  overflow: auto;
+  border:1px solid var(--blueSoft);
+  background: rgba(0,0,0,.18);
+  border-radius: 12px;
+  min-height:60px;
+  max-height:120px;
+  overflow:auto;
 }
 
 .navaidOverlapRow{
   display:grid;
   grid-template-columns: 70px 90px 1fr 90px;
-  gap: 8px;
-  padding: 8px 10px;
-  border-bottom: 1px solid rgba(48,255,85,.18);
+  gap:8px;
+  padding:8px 10px;
+  border-bottom:1px solid rgba(255,204,0,.12);
   cursor:pointer;
 }
-.navaidOverlapRow:hover{ background: rgba(48,255,85,.06); }
+.navaidOverlapRow:hover{ background:rgba(255,204,0,.06); }
 
-.ovIdent{ color: var(--cyan); font-weight: 900; }
-.ovType{ color: #eaffea; opacity: .9; }
-.ovName{ color: #eaffea; }
-.ovDist{ color: var(--warn); font-weight: 800; text-align:right; }
+.ovIdent{ color:var(--yellow); font-weight:900; }
+.ovType{ color:rgba(255,255,255,.88); }
+.ovName{ color:rgba(255,255,255,.88); }
+.ovDist{ color:rgba(120,180,255,1); font-weight:900; text-align:right; }
 
 .navaidResults{
-  margin-top: 10px;
-  border: 1px solid rgba(48,255,85,.35);
-  background: #0a0a0a;
-  max-height: 260px;
-  overflow: auto;
+  margin-top:10px;
+  border:1px solid var(--blueSoft);
+  background: rgba(0,0,0,.18);
+  border-radius:12px;
+  max-height:260px;
+  overflow:auto;
 }
 
 .navaidRow{
   display:grid;
   grid-template-columns: 70px 90px 1fr 90px;
-  gap: 8px;
-  padding: 8px 10px;
-  border-bottom: 1px solid rgba(48,255,85,.18);
-  cursor: pointer;
+  gap:8px;
+  padding:8px 10px;
+  border-bottom:1px solid rgba(255,204,0,.12);
+  cursor:pointer;
+}
+.navaidRow:hover{ background:rgba(255,204,0,.06); }
+
+.cellIdent{ color:var(--yellow); font-weight:900; }
+.cellType{ color:rgba(255,255,255,.88); }
+.cellName{ color:rgba(255,255,255,.88); }
+.cellDist{ color:rgba(120,180,255,1); font-weight:900; text-align:right; }
+
+/* --- WEATHER PANEL header bits --- */
+.wxHeader{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:10px;
+  margin-bottom: 8px;
 }
 
-.navaidRow:hover{ background: rgba(48,255,85,.06); }
+.wxTitle{
+  color: var(--yellow);
+  font-weight: 900;
+  letter-spacing: .18em;
+  font-size: 12px;
+  text-transform: uppercase;
+}
 
-.cellIdent{ color: var(--cyan); font-weight: 900; }
-.cellType{ color: #eaffea; opacity: .9; }
-.cellName{ color: #eaffea; }
-.cellDist{ color: var(--warn); font-weight: 800; text-align:right; }
+.wxControls{
+  display:flex;
+  gap:8px;
+  margin-bottom: 8px;
+}
 
-/* Airport rows in search (same grid, but ident color differs) */
-.navaidRow[data-kind="AIRPORT"] .cellIdent{
-  color: var(--warn);
+.wxControls input{ flex: 1; }
+
+.wxChips{
+  display:flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 8px;
+}
+
+/* square, smaller chip */
+.wxChip{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  padding:6px 8px;
+  border-radius:10px;
+  border:1px solid rgba(255,204,0,.35);
+  background: rgba(255,204,0,.07);
+  color: var(--yellow);
+  font-weight: 900;
+  letter-spacing: .06em;
+}
+
+.wxChip button{
+  border:1px solid rgba(255,255,255,.25);
+  background: rgba(0,0,0,.25);
+  color: rgba(255,255,255,.9);
+  cursor:pointer;
+  border-radius:6px;
+  padding: 1px 6px;
+  font-weight: 900;
+  line-height: 1.2;
+}
+
+.wxChip button:hover{ background: rgba(0,0,0,.4); }
+
+/* metar formatting helpers */
+.wxBlockLine{
+  border-top: 1px solid var(--whiteLine);
+  margin: 10px 0;
+}
+.wxIdent{
+  color: var(--yellow);
+  font-weight: 900;
+}
+.wxCatVFR{ color: var(--catVFR); font-weight: 900; }
+.wxCatMVFR{ color: var(--catMVFR); font-weight: 900; }
+.wxCatIFR{ color: var(--catIFR); font-weight: 900; }
+.wxCatLIFR{ color: var(--catLIFR); font-weight: 900; }
+
+/* --- RUNWAY HELPER --- */
+.runwayHeader{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:10px;
+  margin-bottom: 8px;
+}
+
+.runwayTitle{
+  color: var(--yellow);
+  font-weight: 900;
+  letter-spacing: .18em;
+  font-size: 12px;
+  text-transform: uppercase;
+}
+
+.runwayBlockLine{
+  border-top: 1px solid var(--whiteLine);
+  margin: 10px 0;
+}
+
+.runwayIdent{
+  color: var(--yellow);
+  font-weight: 900;
+}
+
+.runwayConfig{
+  color: rgba(120,180,255,1);
+  font-weight: 900;
+  text-shadow: 0 0 12px rgba(18,60,140,.18);
+}
+
+.runwayHint{
+  color: rgba(255,255,255,.82);
+}
+
+/* --- RVR PANEL --- */
+.rvrHeader{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:10px;
+  margin-bottom: 8px;
+}
+
+.rvrTitle{
+  color: var(--yellow);
+  font-weight: 900;
+  letter-spacing: .18em;
+  font-size: 12px;
+  text-transform: uppercase;
+}
+
+.rvrControls{
+  display:flex;
+  gap:8px;
+  margin-bottom: 8px;
+}
+.rvrControls input{ flex: 1; }
+
+.rvrChips{
+  display:flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 8px;
+}
+
+.rvrChip{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  padding:6px 8px;
+  border-radius:10px;
+  border:1px solid rgba(255,204,0,.35);
+  background: rgba(255,204,0,.07);
+  color: var(--yellow);
+  font-weight: 900;
+  letter-spacing: .06em;
+}
+
+.rvrChip button{
+  border:1px solid rgba(255,255,255,.25);
+  background: rgba(0,0,0,.25);
+  color: rgba(255,255,255,.9);
+  cursor:pointer;
+  border-radius:6px;
+  padding: 1px 6px;
+  font-weight: 900;
+  line-height: 1.2;
+}
+
+.rvrChip button:hover{ background: rgba(0,0,0,.4); }
+
+.rvrBlockLine{
+  border-top: 1px solid var(--whiteLine);
+  margin: 10px 0;
+}
+
+.rvrIdent{
+  color: var(--yellow);
+  font-weight: 900;
+}
+
+.rvrLink{
+  color: rgba(120,180,255,1);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.rvrHint{
+  color: rgba(255,255,255,.82);
+  margin-top: 4px;
 }

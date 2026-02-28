@@ -1,3 +1,4 @@
+// app.js
 async function loadTSV(path) {
   const res = await fetch(path);
   if (!res.ok) throw new Error(`Failed to load ${path} (${res.status})`);
@@ -34,24 +35,17 @@ function escHtml(s) {
     .replaceAll("'", "&#039;");
 }
 
-/* -------------------- NAVAID + AIRPORT SUPPORT --------------------
-NAVAIDs.tsv headers:
-ident  name  type  frequency_khz  latitude_deg  longitude_deg
-
-Airports.tsv headers:
-ident  name
----------------------------------------------------------- */
-
+/* -------------------- NAVAID + AIRPORT SUPPORT -------------------- */
 const KLGA_LAT = 40.7772;
 const KLGA_LON = -73.8726;
 
 let navaidsRows = [];
-let navaidByIdent = new Map(); // IDENT -> [records...] sorted by distance asc
-let navaidSearchIndex = [];    // flattened, searchable (nearest first)
+let navaidByIdent = new Map();
+let navaidSearchIndex = [];
 
 let airportsRows = [];
-let airportByIdent = new Map(); // IDENT -> airport record
-let airportSearchIndex = [];    // flattened, searchable (alpha)
+let airportByIdent = new Map();
+let airportSearchIndex = [];
 
 /* ---------- math / format helpers ---------- */
 function toNumberOrNaN(v) {
@@ -120,12 +114,10 @@ function buildNavaidMaps(rows) {
     navaidSearchIndex.push({ ...obj, key });
   }
 
-  // sort each overlap group by distance asc
-  for (const [ident, list] of navaidByIdent.entries()) {
+  for (const [, list] of navaidByIdent.entries()) {
     list.sort((a, b) => (a.DIST_NM - b.DIST_NM) || a.NAME.localeCompare(b.NAME));
   }
 
-  // search list nearest-first
   navaidSearchIndex.sort((a, b) =>
     (a.DIST_NM - b.DIST_NM) || a.IDENT.localeCompare(b.IDENT)
   );
@@ -139,18 +131,10 @@ function buildAirportMaps(rows) {
     const ident = norm(r.ident).toUpperCase();
     if (!ident) continue;
 
-    const obj = {
-      KIND: "AIRPORT",
-      IDENT: ident,
-      NAME: norm(r.name)
-    };
+    const obj = { KIND: "AIRPORT", IDENT: ident, NAME: norm(r.name) };
+    if (!airportByIdent.has(ident)) airportByIdent.set(ident, obj);
 
-    if (!airportByIdent.has(ident)) {
-      airportByIdent.set(ident, obj);
-    }
-
-    // Add some extra searchable words so "heliport" / "airport" queries work
-    const key = `${obj.IDENT} ${obj.NAME} AIRPORT APT HELIPORT` .toUpperCase();
+    const key = `${obj.IDENT} ${obj.NAME} AIRPORT APT HELIPORT`.toUpperCase();
     airportSearchIndex.push({ ...obj, key });
   }
 
@@ -160,17 +144,12 @@ function buildAirportMaps(rows) {
 /* ---------- display (selected) ---------- */
 function setInfoDefault() {
   const info = document.getElementById("navaidInfo");
-  info.textContent =
-    "";
+  info.textContent = "";
 }
 
 function setNavaidInfoText(obj) {
   const info = document.getElementById("navaidInfo");
-
-  if (!obj) {
-    setInfoDefault();
-    return;
-  }
+  if (!obj) return setInfoDefault();
 
   const latStr = Number.isFinite(obj.LAT) ? obj.LAT.toFixed(6) : "(unknown)";
   const lonStr = Number.isFinite(obj.LON) ? obj.LON.toFixed(6) : "(unknown)";
@@ -191,11 +170,7 @@ function setNavaidInfoText(obj) {
 
 function setAirportInfoText(obj) {
   const info = document.getElementById("navaidInfo");
-
-  if (!obj) {
-    setInfoDefault();
-    return;
-  }
+  if (!obj) return setInfoDefault();
 
   info.textContent =
     `KIND:  AIRPORT\n` +
@@ -220,7 +195,7 @@ function renderOverlaps(ident, selectedIndex = 0) {
       ? `${o.DIST_NM.toFixed(1)} NM`
       : "—";
 
-    const style = idx === selectedIndex ? `style="background: rgba(255,233,74,.08);"` : "";
+    const style = idx === selectedIndex ? `style="background: rgba(255,204,0,.08);"` : "";
 
     return `
       <div class="navaidOverlapRow" data-ident="${escHtml(o.IDENT)}" data-idx="${idx}" ${style}>
@@ -257,7 +232,6 @@ function selectNavaid(ident, idx = 0) {
 function selectAirport(ident) {
   const key = norm(ident).toUpperCase();
   const apt = airportByIdent.get(key);
-
   setAirportInfoText(apt || { IDENT: key, NAME: "" });
   setOverlapsBlank();
 }
@@ -274,7 +248,6 @@ function renderUnifiedSearch(q) {
 
   const hits = [];
 
-  // Navaids first (nearest-first)
   for (const v of navaidSearchIndex) {
     if (v.key.includes(query)) {
       hits.push(v);
@@ -282,7 +255,6 @@ function renderUnifiedSearch(q) {
     }
   }
 
-  // Fill remaining with airports (alpha)
   if (hits.length < 50) {
     for (const a of airportSearchIndex) {
       if (a.key.includes(query)) {
@@ -299,7 +271,6 @@ function renderUnifiedSearch(q) {
 
   resultsEl.innerHTML = hits.map(v => {
     const kind = v.KIND;
-
     const typeLabel = kind === "NAVAID" ? (v.TYPE || "-") : "AIRPORT";
     const nameLabel = v.NAME || "-";
 
@@ -329,7 +300,6 @@ function wireUnifiedPanelClicks() {
 
   search.addEventListener("input", () => renderUnifiedSearch(search.value));
 
-  // click a search result -> select by kind
   results.addEventListener("click", (e) => {
     const row = e.target.closest(".navaidRow");
     if (!row) return;
@@ -341,7 +311,6 @@ function wireUnifiedPanelClicks() {
     else selectNavaid(ident, 0);
   });
 
-  // click an overlap -> select that specific navaid record
   overlaps.addEventListener("click", (e) => {
     const row = e.target.closest(".navaidOverlapRow");
     if (!row) return;
@@ -350,7 +319,6 @@ function wireUnifiedPanelClicks() {
     selectNavaid(ident, idx);
   });
 
-  // delegated clicks for tokens inside routes
   document.addEventListener("click", (e) => {
     const nav = e.target.closest(".navaidToken");
     if (nav) {
@@ -367,10 +335,7 @@ function wireUnifiedPanelClicks() {
   });
 }
 
-/* route: dots + clickable tokens
-   - navaid tokens cyan if token matches navaid ident
-   - airport tokens yellow if token matches airport ident (and not a navaid)
-*/
+/* route: dots + clickable tokens */
 function renderRouteWithLinks(routeStr) {
   const rawTokens = norm(routeStr).split(/\s+/g).filter(Boolean);
 
@@ -380,11 +345,9 @@ function renderRouteWithLinks(routeStr) {
     if (navaidByIdent.has(key)) {
       return `<span class="navaidToken" data-navaid="${escHtml(key)}">${escHtml(key)}</span>`;
     }
-
     if (airportByIdent.has(key)) {
       return `<span class="airportToken" data-airport="${escHtml(key)}">${escHtml(key)}</span>`;
     }
-
     return escHtml(tok);
   });
 
@@ -466,6 +429,460 @@ let gatesRows = [];
 let depRulesRows = [];
 let routesRows = [];
 
+/* -------------------- WEATHER (VATSIM METAR) -------------------- */
+const WX_STORAGE_KEY = "ids4_wx_watchlist_v2";
+let wxWatchlist = [];
+
+function loadWxWatchlist() {
+  try {
+    const raw = localStorage.getItem(WX_STORAGE_KEY);
+    const arr = raw ? JSON.parse(raw) : [];
+    if (Array.isArray(arr)) wxWatchlist = arr.map(x => norm(x).toUpperCase()).filter(Boolean);
+    else wxWatchlist = [];
+  } catch {
+    wxWatchlist = [];
+  }
+  if (!wxWatchlist.length) wxWatchlist = ["KLGA", "KJFK", "KEWR", "KTEB"];
+}
+
+function saveWxWatchlist() {
+  localStorage.setItem(WX_STORAGE_KEY, JSON.stringify(wxWatchlist));
+}
+
+function renderWxChips() {
+  const wrap = document.getElementById("wxChips");
+  wrap.innerHTML = wxWatchlist.map(icao => `
+    <div class="wxChip">
+      <span>${escHtml(icao)}</span>
+      <button type="button" data-icao="${escHtml(icao)}">X</button>
+    </div>
+  `).join("");
+}
+
+function isLikelyIcao(s) {
+  const v = norm(s).toUpperCase();
+  return /^[A-Z0-9]{3,5}$/.test(v);
+}
+
+async function fetchVatsimMetar(icao) {
+  const id = norm(icao).toUpperCase();
+  const url = `https://metar.vatsim.net/metar.php?id=${encodeURIComponent(id)}`;
+  const res = await fetch(url, { cache: "no-store" });
+  if (!res.ok) throw new Error(`METAR fetch failed (${res.status})`);
+  const text = await res.text();
+  const lines = text.replace(/\r/g, "").split("\n").map(l => l.trim()).filter(Boolean);
+  const exact = lines.find(l => l.toUpperCase().startsWith(id + " "));
+  return exact || lines[0] || `${id} (no METAR)`;
+}
+
+/* --- Flight category --- */
+function parseVisSM(metar) {
+  const m = metar.match(/(\d+\s+\d+\/\d+|\d+\/\d+|\d+)\s*SM\b/);
+  if (!m) return NaN;
+
+  const raw = m[1].trim();
+
+  if (raw.includes(" ")) {
+    const [whole, frac] = raw.split(/\s+/);
+    const [a,b] = frac.split("/").map(Number);
+    const w = Number(whole);
+    if (!Number.isFinite(w) || !Number.isFinite(a) || !Number.isFinite(b) || b === 0) return NaN;
+    return w + (a/b);
+  }
+
+  if (raw.includes("/")) {
+    const [a,b] = raw.split("/").map(Number);
+    if (!Number.isFinite(a) || !Number.isFinite(b) || b === 0) return NaN;
+    return a/b;
+  }
+
+  const n = Number(raw);
+  return Number.isFinite(n) ? n : NaN;
+}
+
+function parseCeilFt(metar) {
+  const layers = [...metar.matchAll(/\b(BKN|OVC|VV)(\d{3})\b/g)];
+  if (!layers.length) return Infinity;
+
+  let minFt = Infinity;
+  for (const x of layers) {
+    const h = Number(x[2]);
+    if (Number.isFinite(h)) {
+      const ft = h * 100;
+      if (ft < minFt) minFt = ft;
+    }
+  }
+  return minFt;
+}
+
+function flightCategory(metar) {
+  const m = norm(metar);
+  if (!m) return { cat: "—", cls: "" };
+
+  const vis = parseVisSM(m);
+  const ceil = parseCeilFt(m);
+
+  if ((Number.isFinite(ceil) && ceil < 500) || (Number.isFinite(vis) && vis < 1)) return { cat: "LIFR", cls: "wxCatLIFR" };
+  if ((Number.isFinite(ceil) && ceil < 1000) || (Number.isFinite(vis) && vis < 3)) return { cat: "IFR", cls: "wxCatIFR" };
+  if ((Number.isFinite(ceil) && ceil < 3000) || (Number.isFinite(vis) && vis < 5)) return { cat: "MVFR", cls: "wxCatMVFR" };
+  return { cat: "VFR", cls: "wxCatVFR" };
+}
+
+function renderMetarLineHtml(icao, metar) {
+  const id = norm(icao).toUpperCase();
+  const text = norm(metar);
+  const { cat, cls } = flightCategory(text);
+
+  if (text.toUpperCase().startsWith(id + " ")) {
+    const rest = text.slice(id.length);
+    return `<span class="wxIdent">${escHtml(id)}</span> <span class="${escHtml(cls)}">${escHtml(cat)}</span>${escHtml(rest)}`;
+  }
+  return `<span class="wxIdent">${escHtml(id)}</span> <span class="${escHtml(cls)}">${escHtml(cat)}</span> ${escHtml(text)}`;
+}
+
+async function refreshWx() {
+  const out = document.getElementById("wxOut");
+
+  if (!wxWatchlist.length) {
+    out.innerHTML = "";
+    return;
+  }
+
+  out.textContent = "Fetching METARs...\n";
+
+  const concurrency = 5;
+  const results = new Array(wxWatchlist.length);
+  let i = 0;
+
+  async function worker() {
+    while (i < wxWatchlist.length) {
+      const idx = i++;
+      const icao = wxWatchlist[idx];
+      try {
+        const metar = await fetchVatsimMetar(icao);
+        results[idx] = { icao, metar };
+      } catch {
+        results[idx] = { icao, metar: `${icao} (error)` };
+      }
+    }
+  }
+
+  const workers = Array.from({ length: Math.min(concurrency, wxWatchlist.length) }, worker);
+  await Promise.all(workers);
+
+  const blocks = results
+    .filter(Boolean)
+    .map((r, idx) => {
+      const line = renderMetarLineHtml(r.icao, r.metar);
+      const sep = idx === 0 ? "" : `<div class="wxBlockLine"></div>`;
+      return `${sep}<div>${line}</div>`;
+    })
+    .join("");
+
+  out.innerHTML = blocks;
+}
+
+function wireWxPanel() {
+  const addInput = document.getElementById("wxAddInput");
+  const addBtn = document.getElementById("wxAddBtn");
+  const refreshBtn = document.getElementById("wxRefreshBtn");
+  const chips = document.getElementById("wxChips");
+
+  loadWxWatchlist();
+  renderWxChips();
+
+  addBtn.addEventListener("click", () => {
+    const v = norm(addInput.value).toUpperCase();
+    if (!isLikelyIcao(v)) return;
+
+    if (!wxWatchlist.includes(v)) {
+      wxWatchlist.unshift(v);
+      wxWatchlist = wxWatchlist.slice(0, 20);
+      saveWxWatchlist();
+      renderWxChips();
+      refreshWx();
+    }
+
+    addInput.value = "";
+    addInput.focus();
+  });
+
+  addInput.addEventListener("keydown", (e) => {
+    if (e.key === "Enter") addBtn.click();
+  });
+
+  chips.addEventListener("click", (e) => {
+    const btn = e.target.closest("button[data-icao]");
+    if (!btn) return;
+    const icao = btn.getAttribute("data-icao");
+    wxWatchlist = wxWatchlist.filter(x => x !== icao);
+    saveWxWatchlist();
+    renderWxChips();
+    refreshWx();
+  });
+
+  refreshBtn.addEventListener("click", refreshWx);
+
+  refreshWx();
+  setInterval(refreshWx, 60000);
+}
+
+/* -------------------- RUNWAY SELECTION HELPER -------------------- */
+function parseWindFromMetar(metar) {
+  const m = norm(metar).toUpperCase();
+  const w = m.match(/\b(\d{3}|VRB)(\d{2,3})(?:G(\d{2,3}))?KT\b/);
+  if (!w) return { dir: "", spd: NaN, raw: "" };
+
+  const dirRaw = w[1];
+  const spd = Number(w[2]);
+  return { dir: dirRaw, spd: Number.isFinite(spd) ? spd : NaN, raw: w[0] };
+}
+
+function lgaSuggestedConfigFromInputs(rawDir, rawSpd, rawCat) {
+  if (!rawDir || !Number.isFinite(rawSpd)) return "";
+
+  const dirStr = String(rawDir).toUpperCase();
+  const spd = Number(rawSpd);
+
+  const catStr = String(rawCat || "").toUpperCase();
+  const imc = /^(IFR|LIFR|IMC)$/.test(catStr);
+
+  if (dirStr === "VRB") return "Depart 31, Land ILS 22";
+
+  let dir = Number(dirStr);
+  if (!Number.isFinite(dir)) return "";
+  dir = ((dir % 360) + 360) % 360;
+
+  if (spd <= 4) return "Depart 31, Land ILS 22";
+
+  if (spd <= 14) {
+    if (dir >= 315 || dir <= 44) return imc ? "Depart 4, Land LOC 31" : "Depart 4, Land RNAV GPS X 31";
+    if (dir >= 45 && dir <= 134) return "Depart 13, Land ILS 4";
+    if (dir >= 135 && dir <= 259) return "Depart 13, Land ILS 22";
+    if (dir >= 260 && dir <= 314) return "Depart 31, Land ILS 22";
+    return "";
+  }
+
+  if (spd <= 27) {
+    if (dir >= 315 || dir <= 44) return imc ? "Depart 4, Land LOC 31" : "Depart 4, Land RNAV GPS X 31";
+    if (dir >= 45 && dir <= 134) return "Depart 13, Land ILS 4";
+    if (dir >= 135 && dir <= 224) return "Depart 13, Land ILS 22";
+    if (dir >= 225 && dir <= 314) return "Depart 31, Land ILS 22";
+    return "";
+  }
+
+  if (dir <= 89) return "Depart 4, Land ILS 4";
+  if (dir >= 90 && dir <= 179) return imc ? "Depart 13, Land ILS 13" : "Depart 13, Land ILS 22 CIR 13";
+  if (dir >= 180 && dir <= 269) return "Depart 22, Land ILS 22";
+  if (dir >= 270 && dir <= 359) return "Depart 31, Land LOC 31";
+  return "";
+}
+
+function jfkSuggestedConfigFromInputs(rawDir, rawSpd) {
+  if (!rawDir || !Number.isFinite(rawSpd)) return "";
+
+  const dirStr = String(rawDir).toUpperCase();
+  const spd = Number(rawSpd);
+
+  if (dirStr === "VRB") return "Depart 31L/R, Land 31L/R";
+
+  let dir = Number(dirStr);
+  if (!Number.isFinite(dir)) return "";
+  dir = ((dir % 360) + 360) % 360;
+
+  if (spd <= 4) return "Depart 31L/R, Land 31L/R";
+
+  if (dir >= 0 && dir <= 99) return "Depart 04L, Land 04L/R";
+  if (dir >= 100 && dir <= 159) return "Depart 13L/R, Land 13L + 22L";
+  if (dir >= 160 && dir <= 259) return "Depart 22R, Land 22L/R";
+  if (dir >= 260 && dir <= 359) return "Depart 31L/R, Land 31L/R";
+  return "";
+}
+
+function renderRunwayHelperBlock(icao, metar) {
+  const id = norm(icao).toUpperCase();
+  const m = norm(metar);
+
+  const { cat } = flightCategory(m);
+  const wind = parseWindFromMetar(m);
+
+  let config = "—";
+  if (id === "KLGA") {
+    const sug = lgaSuggestedConfigFromInputs(wind.dir, wind.spd, cat);
+    config = sug || "—";
+  } else if (id === "KJFK") {
+    const sug = jfkSuggestedConfigFromInputs(wind.dir, wind.spd);
+    config = sug || "—";
+  }
+
+  const metarLine = renderMetarLineHtml(id, m);
+
+  const windLine =
+    wind.raw
+      ? `<div class="runwayHint">WIND: ${escHtml(wind.raw)}</div>`
+      : `<div class="runwayHint">WIND: (not found in METAR)</div>`;
+
+  return `
+    <div>${metarLine}</div>
+    ${windLine}
+    <div class="runwayHint">SUGGESTED AIRPORT CONFIGURATION - <span class="runwayConfig">${escHtml(config)}</span></div>
+  `;
+}
+
+async function refreshRunwayHelper() {
+  const out = document.getElementById("runwayOut");
+  out.textContent = "Fetching KLGA / KJFK METAR...\n";
+
+  const airports = ["KLGA", "KJFK"];
+  const results = [];
+
+  for (const a of airports) {
+    try {
+      const metar = await fetchVatsimMetar(a);
+      results.push({ a, metar, ok: true });
+    } catch {
+      results.push({ a, metar: `${a} (error)`, ok: false });
+    }
+  }
+
+  const blocks = results.map((r, idx) => {
+    const sep = idx === 0 ? "" : `<div class="runwayBlockLine"></div>`;
+    if (!r.ok) {
+      return `${sep}<div><span class="runwayIdent">${escHtml(r.a)}</span> <span class="runwayHint">(error fetching METAR)</span></div>`;
+    }
+    return `${sep}<div>${renderRunwayHelperBlock(r.a, r.metar)}</div>`;
+  }).join("");
+
+  out.innerHTML = blocks;
+}
+
+function wireRunwayHelperPanel() {
+  const refreshBtn = document.getElementById("runwayRefreshBtn");
+  refreshBtn.addEventListener("click", refreshRunwayHelper);
+
+  refreshRunwayHelper();
+  setInterval(refreshRunwayHelper, 60000);
+}
+
+/* -------------------- RVR (disabled for now) -------------------- */
+const RVR_PROXY_BASE = "https://faarvr.carterdenelle42.workers.dev";
+
+const RVR_STORAGE_KEY = "ids4_rvr_watchlist_v1";
+let rvrWatchlist = [];
+
+function loadRvrWatchlist() {
+  try {
+    const raw = localStorage.getItem(RVR_STORAGE_KEY);
+    const arr = raw ? JSON.parse(raw) : [];
+    if (Array.isArray(arr)) rvrWatchlist = arr.map(x => norm(x).toUpperCase()).filter(Boolean);
+    else rvrWatchlist = [];
+  } catch {
+    rvrWatchlist = [];
+  }
+  if (!rvrWatchlist.length) rvrWatchlist = ["LGA", "JFK", "EWR"];
+}
+
+function saveRvrWatchlist() {
+  localStorage.setItem(RVR_STORAGE_KEY, JSON.stringify(rvrWatchlist));
+}
+
+function renderRvrChips() {
+  const wrap = document.getElementById("rvrChips");
+  wrap.innerHTML = rvrWatchlist.map(apt => `
+    <div class="rvrChip">
+      <span>${escHtml(apt)}</span>
+      <button type="button" data-apt="${escHtml(apt)}">X</button>
+    </div>
+  `).join("");
+}
+
+function faaRvrUrl(apt) {
+  const a = norm(apt).toUpperCase();
+  return `https://rvr.data.faa.gov/cgi-bin/rvr-details.pl?content=table&airport=${encodeURIComponent(a)}&rrate=medium&layout=2x2&gifsize=large&fontsize=large&fs=lg`;
+}
+
+function renderRvrBlockHtml(apt) {
+  const a = norm(apt).toUpperCase();
+  const link = faaRvrUrl(a);
+  return `
+    <div><span class="rvrIdent">${escHtml(a)}</span>  (disabled)</div>
+    <div class="rvrHint">RVR monitor is currently disabled.</div>
+    <div style="margin-top:6px;"><a class="rvrLink" href="${escHtml(link)}" target="_blank" rel="noopener">Open FAA RVR page</a></div>
+  `;
+}
+
+async function refreshRvr() {
+  const out = document.getElementById("rvrOut");
+  if (!rvrWatchlist.length) { out.innerHTML = ""; return; }
+
+  const blocks = rvrWatchlist.map((apt, idx) => {
+    const sep = idx === 0 ? "" : `<div class="rvrBlockLine"></div>`;
+    return `${sep}<div>${renderRvrBlockHtml(apt)}</div>`;
+  }).join("");
+
+  out.innerHTML = blocks;
+}
+
+function wireRvrPanel() {
+  const addInput = document.getElementById("rvrAddInput");
+  const addBtn = document.getElementById("rvrAddBtn");
+  const refreshBtn = document.getElementById("rvrRefreshBtn");
+  const chips = document.getElementById("rvrChips");
+
+  loadRvrWatchlist();
+  renderRvrChips();
+
+  addBtn.addEventListener("click", () => {
+    const v = norm(addInput.value).toUpperCase();
+    if (!isLikelyIcao(v)) return;
+
+    if (!rvrWatchlist.includes(v)) {
+      rvrWatchlist.unshift(v);
+      rvrWatchlist = rvrWatchlist.slice(0, 15);
+      saveRvrWatchlist();
+      renderRvrChips();
+      refreshRvr();
+    }
+
+    addInput.value = "";
+    addInput.focus();
+  });
+
+  addInput.addEventListener("keydown", (e) => {
+    if (e.key === "Enter") addBtn.click();
+  });
+
+  chips.addEventListener("click", (e) => {
+    const btn = e.target.closest("button[data-apt]");
+    if (!btn) return;
+    const apt = btn.getAttribute("data-apt");
+    rvrWatchlist = rvrWatchlist.filter(x => x !== apt);
+    saveRvrWatchlist();
+    renderRvrChips();
+    refreshRvr();
+  });
+
+  refreshBtn.addEventListener("click", refreshRvr);
+
+  refreshRvr();
+  setInterval(refreshRvr, 60000);
+}
+
+/* -------------------- CLIMB VIA / MAINTAIN 5000 LOGIC -------------------- */
+function isClimbViaSidFromProcedure(procStr) {
+  const p = norm(procStr).toUpperCase();
+  if (!p) return false;
+
+  const pNorm = p.replace(/\s+/g, ".");
+
+  if (pNorm.includes("LGA7.MASPETH")) return true;
+  if (pNorm.includes("LGA7.CONEY")) return true;
+
+  const rnav = ["HOPEA", "JUTES", "TNNIS", "NTHNS", "GLDMN"];
+  return rnav.some(k => pNorm.includes(k + "#") || pNorm.includes(k));
+}
+
+/* -------------------- INIT -------------------- */
 document.addEventListener("DOMContentLoaded", async () => {
   const computedOut = document.getElementById("computedOut");
   computedOut.textContent = "Loading TSV data...";
@@ -477,21 +894,21 @@ document.addEventListener("DOMContentLoaded", async () => {
     depRulesRows = await loadTSV("Dep_Rules.tsv");
     routesRows = await loadTSV("PRD.tsv");
 
-    // Navaids with lat/lon
     navaidsRows = await loadTSV("NAVAIDs.tsv");
     buildNavaidMaps(navaidsRows);
 
-    // Airports (84k lines) - header: ident  name
     airportsRows = await loadTSV("Airports.tsv");
     buildAirportMaps(airportsRows);
 
     wireUnifiedPanelClicks();
+    wireWxPanel();
+    wireRunwayHelperPanel();
+    wireRvrPanel();
 
     populateDropdowns();
 
     document.getElementById("exitFix").value = "WHITE";
     document.getElementById("dest").value = "KPHL";
-
     document.getElementById("runBtn").addEventListener("click", runTool);
 
     computedOut.textContent = "Ready. Fill inputs and hit EXEC.";
@@ -547,7 +964,6 @@ function pickDepartureRule(inputs) {
   );
 
   if (!matches.length) return null;
-
   matches.sort((a, b) => Number(a.PRIORITY) - Number(b.PRIORITY));
   return matches[0];
 }
@@ -593,23 +1009,21 @@ function runTool() {
 
   const rule = pickDepartureRule(inputs);
 
-if (!rule) {
-  document.getElementById("depOut").textContent =
-    "No matching departure rule found.";
-} else {
-  let text =
-    `OUTPUT: ${rule.OUTPUT}\n` +
-    `PRIORITY: ${rule.PRIORITY}`;
+  const depOut = document.getElementById("depOut");
+  if (!rule) {
+    depOut.textContent = "No matching departure rule found.";
+  } else {
+    const proc = norm(rule.OUTPUT);
+    const climbVia = isClimbViaSidFromProcedure(proc);
+    const climbText = climbVia ? "CLIMB VIA SID" : "CLIMB AND MAINTAIN 5,000";
 
-  if (norm(rule.NOTES)) {
-    text =
-      `OUTPUT: ${rule.OUTPUT}\n` +
-      `NOTES: ${rule.NOTES}\n` +
-      `PRIORITY: ${rule.PRIORITY}`;
+    let html =
+      `<span class="depLabel">PROCEDURE:</span> <span class="depValue">${escHtml(proc)}</span>` +
+      `<br><span class="depLabel">CLIMB:</span> <span class="depNotes">${escHtml(climbText)}</span>`;
+
+    if (norm(rule.NOTES)) html += `<br><span class="depNotes">NOTES: ${escHtml(rule.NOTES)}</span>`;
+    depOut.innerHTML = html;
   }
-
-  document.getElementById("depOut").textContent = text;
-}
 
   const rts = getRoutes(dest);
   const routesOut = document.getElementById("routesOut");

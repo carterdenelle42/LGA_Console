@@ -1,9 +1,10 @@
+<!-- index.html -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>LGA Console</title>
+  <title>IDS4 • LGA Console</title>
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
@@ -14,11 +15,34 @@
     </div>
 
     <div class="mainGrid">
-      <!-- LEFT COLUMN: inputs -->
-      <div class="box boxInputs">
-        <div class="boxTitle">INPUTS</div>
+      <!-- LEFT COLUMN: NAVAID / AIRPORT INFO -->
+      <div class="box boxNavaid">
+        <div class="boxTitle">NAVAID / AIRPORT INFO</div>
 
-        <div class="formGrid">
+        <div class="navaidGrid">
+          <div class="navaidLeft">
+            <div class="navaidSectionTitle">SELECTED</div>
+            <pre id="navaidInfo" class="console navaidConsole"></pre>
+
+            <div class="navaidSectionTitle">OVERLAPS (NEAREST FIRST)</div>
+            <div id="navaidOverlaps" class="navaidOverlaps"></div>
+          </div>
+
+          <div class="navaidRight">
+            <div class="navaidSectionTitle">SEARCH</div>
+            <input id="navaidSearch" placeholder="ident / name / type (e.g. CMK, CARMEL, VOR, 00A)" />
+            <div id="navaidResults" class="navaidResults"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- MIDDLE COLUMN: COMBINED PANEL -->
+      <div class="box boxMain">
+        <div class="boxTitle">INPUTS / STATUS / DEPARTURE PROCEDURE</div>
+
+        <!-- INPUTS -->
+        <div class="sectionTitle">INPUTS</div>
+        <div class="formGrid formGridMain">
           <div class="field">
             <div class="label">LGA ATIS CONFIG</div>
             <select id="lgaConfig"></select>
@@ -50,44 +74,76 @@
 
           <button id="runBtn" type="button" class="btnRun">EXEC</button>
         </div>
-      </div>
 
-      <!-- CENTER COLUMN: computed + departure + navaid -->
-      <div class="box boxComputed">
-        <div class="boxTitle">STATUS / COMPUTED</div>
+        <div class="dividerLine"></div>
+
+        <!-- STATUS / COMPUTED -->
+        <div class="sectionTitle">STATUS / COMPUTED</div>
         <pre id="computedOut" class="console"></pre>
+
+        <div class="dividerLine"></div>
+
+        <!-- DEPARTURE PROCEDURE -->
+        <div class="sectionTitle">DEPARTURE PROCEDURE</div>
+        <pre id="depOut" class="console depConsole"></pre>
       </div>
 
-      <div class="box boxDeparture">
-        <div class="boxTitle">DEPARTURE PROCEDURE</div>
-        <pre id="depOut" class="console"></pre>
-      </div>
-
-      <div class="box boxNavaid">
-        <div class="boxTitle">NAVAID / AIRPORT INFO</div>
-
-        <div class="navaidGrid">
-          <div class="navaidLeft">
-            <div class="navaidSectionTitle">SELECTED</div>
-            <pre id="navaidInfo" class="console navaidConsole"></pre>
-
-            <div class="navaidSectionTitle">OVERLAPS (NEAREST FIRST)</div>
-            <div id="navaidOverlaps" class="navaidOverlaps"></div>
-          </div>
-
-          <div class="navaidRight">
-            <div class="navaidSectionTitle">SEARCH (NAVAIDS + AIRPORTS)</div>
-            <input id="navaidSearch" placeholder="ident / name / type (navaid or airport)" />
-            <div id="navaidResults" class="navaidResults"></div>
+      <!-- RIGHT COLUMN: STACKED PANELS -->
+      <div class="rightStack">
+        <!-- PRD ROUTES (TOP) -->
+        <div class="box boxRight boxPrd">
+          <div class="boxTitle">PRD ROUTES</div>
+          <div class="tableWrap">
+            <div id="routesOut"></div>
           </div>
         </div>
-      </div>
 
-      <!-- RIGHT COLUMN: routes -->
-      <div class="box boxRoutes">
-        <div class="boxTitle">PRD ROUTES</div>
-        <div class="tableWrap">
-          <div id="routesOut"></div>
+        <!-- WEATHER -->
+        <div class="box boxRight boxWx">
+          <div class="wxHeader">
+            <div class="wxTitle">WEATHER (VATSIM METAR)</div>
+            <div class="wxActions">
+              <button id="wxRefreshBtn" class="btnSmall" type="button">REFRESH</button>
+            </div>
+          </div>
+
+          <div class="wxControls">
+            <input id="wxAddInput" placeholder="Add airport (e.g. KLGA, KJFK, KPHL)" />
+            <button id="wxAddBtn" class="btnSmall" type="button">ADD</button>
+          </div>
+
+          <div id="wxChips" class="wxChips"></div>
+          <pre id="wxOut" class="console wxConsole"></pre>
+        </div>
+
+        <!-- SUGGESTED AIRPORT CONFIGURATION -->
+        <div class="box boxRight boxRunway">
+          <div class="runwayHeader">
+            <div class="runwayTitle">SUGGESTED AIRPORT CONFIGURATION</div>
+            <div class="runwayActions">
+              <button id="runwayRefreshBtn" class="btnSmall" type="button">REFRESH</button>
+            </div>
+          </div>
+
+          <pre id="runwayOut" class="console runwayConsole"></pre>
+        </div>
+
+        <!-- RVR (OPTIONAL / DISABLED FOR NOW BUT SEPARATE) -->
+        <div class="box boxRight boxRvr">
+          <div class="rvrHeader">
+            <div class="rvrTitle">RVR MONITOR (FAA)</div>
+            <div class="rvrActions">
+              <button id="rvrRefreshBtn" class="btnSmall" type="button">REFRESH</button>
+            </div>
+          </div>
+
+          <div class="rvrControls">
+            <input id="rvrAddInput" placeholder="Add airport (e.g. LGA, JFK, EWR)" />
+            <button id="rvrAddBtn" class="btnSmall" type="button">ADD</button>
+          </div>
+
+          <div id="rvrChips" class="rvrChips"></div>
+          <pre id="rvrOut" class="console rvrConsole"></pre>
         </div>
       </div>
     </div>
