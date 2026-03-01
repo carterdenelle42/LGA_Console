@@ -1,303 +1,330 @@
-/* style.css */
 :root{
-  --bg:#000;
+  --font: ui-monospace, Menlo, Consolas, "Lucida Console", monospace;
 
-  --yellow:#FFCC00;
-  --yellowSoft:rgba(255,204,0,.35);
-  --yellowGlow:rgba(255,204,0,.18);
+  --pageBg: #000;
 
-  --blue:#0B2F6B;
-  --blueSoft:rgba(11,47,107,.45);
-  --blueGlow:rgba(18,60,140,.25);
+  --chromeHi: #f2f2f2;
+  --chromeMid:#d0d0d0;
+  --chromeLo: #8e8e8e;
 
-  --text:#f5f5f5;
+  --panelBg: #f3f3f3;
+  --panelBg2:#fbfbfb;
 
-  --font: ui-monospace, Menlo, Consolas, monospace;
-
-  --glassBg: rgba(12,16,24,.60);
-  --glassBg2: rgba(8,12,20,.75);
-
-  --whiteLine: rgba(255,255,255,.55);
-
-  /* flight category colors */
-  --catVFR:  #30ff55;
-  --catMVFR: #5aa7ff;
-  --catIFR:  #ff4040;
-  --catLIFR: #ff4fd8;
-
-  /* edge buffer around UI */
   --edgePad: 12px;
+
+  --titleBlue1:#4f77b5;
+  --titleBlue2:#2b4f86;
+
+  --linkBlue:#1a4f9c;
+  --yellow:#ffcc00;
+
+  --catVFR:  #1a8d2d;
+  --catMVFR: #1f4da6;
+  --catIFR:  #b00000;
+  --catLIFR: #a0007a;
 }
 
 *{ box-sizing:border-box; }
+html,body{ height:100%; }
 
 body{
   margin:0;
-  background:
-    radial-gradient(circle at 10% 0%, rgba(255,204,0,.08) 0%, transparent 45%),
-    radial-gradient(circle at 90% 15%, rgba(18,60,140,.15) 0%, transparent 55%),
-    linear-gradient(180deg, #05070c 0%, #000 100%);
-  color: var(--text);
+  background: var(--pageBg);
   font-family: var(--font);
-  overflow-x:hidden;
+  color: #111;
 }
 
-/* subtle scanlines */
-body::after{
-  content:"";
-  position:fixed;
-  inset:0;
-  pointer-events:none;
-  background: repeating-linear-gradient(
-    to bottom,
-    rgba(255,255,255,.03) 0px,
-    rgba(255,255,255,.03) 1px,
-    transparent 3px,
-    transparent 6px
-  );
-  opacity:.08;
-}
+.isHidden{ display:none !important; }
 
-/* FULL-WIDTH APP WITH EDGE BUFFER */
 .screen{
-  width: 100%;
-  max-width: none;
-  margin: 0;
+  width:100%;
   padding: var(--edgePad);
 }
 
-/* --- TOP BAR --- */
+/* TOP BAR */
 .topbar{
   display:flex;
   justify-content:space-between;
   align-items:center;
-  padding:10px 14px;
+  padding:10px 12px;
 
-  background: linear-gradient(180deg, rgba(20,30,50,.85), rgba(8,12,22,.85));
-  border:1px solid var(--blueSoft);
-  border-radius:10px;
+  background: linear-gradient(180deg, var(--chromeHi) 0%, var(--chromeMid) 45%, #bdbdbd 100%);
+  border-radius: 0;
+
+  border-top: 1px solid #fff;
+  border-left: 1px solid #fff;
+  border-right: 1px solid #6f6f6f;
+  border-bottom: 1px solid #6f6f6f;
 
   box-shadow:
-    0 0 20px var(--blueGlow),
-    0 0 0 1px rgba(0,0,0,.7) inset;
+    0 0 0 1px rgba(0,0,0,.22) inset,
+    0 10px 26px rgba(0,0,0,.55);
 
-  backdrop-filter: blur(10px);
   margin-bottom: 10px;
 }
 
+.topbarRight{
+  display:flex;
+  align-items:center;
+  gap:10px;
+}
+
 .brand{
-  letter-spacing:.16em;
+  letter-spacing:.18em;
   font-weight:900;
-  color:var(--yellow);
   text-transform:uppercase;
-  text-shadow:0 0 12px var(--yellowGlow);
+  color:#141414;
+  text-shadow: 0 1px 0 rgba(255,255,255,.7);
+  font-size: 13px;
 }
 
 .clock{
-  font-size:26px;
+  font-size:22px;
   font-weight:900;
-  color:var(--yellow);
-  letter-spacing:.08em;
+  color:#111;
+  letter-spacing:.10em;
+  text-shadow: 0 1px 0 rgba(255,255,255,.55);
 }
 
-/* 3 equal columns */
+/* NEW: SIDEBAR LAYOUT */
+.layout{
+  display:grid;
+  grid-template-columns: 240px 1fr;
+  gap: 10px;
+  align-items:start;
+}
+
+@media (max-width: 1200px){
+  .layout{ grid-template-columns: 1fr; }
+}
+
+/* sidebar */
+.sidebar{
+  position: sticky;
+  top: 10px;
+}
+
+/* 2-across button grid */
+.btnGrid2{
+  display:grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+/* MAIN GRID */
 .mainGrid{
   display:grid;
   grid-template-columns: 1fr 1fr 1fr;
   gap: 10px;
+
+  background: #2a2a2a;
+  padding: 10px;
+
+  border-top: 1px solid #444;
+  border-left: 1px solid #444;
+  border-right: 1px solid #000;
+  border-bottom: 1px solid #000;
+
+  box-shadow:
+    0 0 0 1px rgba(255,255,255,.06) inset,
+    0 12px 34px rgba(0,0,0,.60);
 }
 
 @media (max-width: 1200px){
-  .mainGrid{
-    grid-template-columns: 1fr;
-  }
+  .mainGrid{ grid-template-columns: 1fr; }
 }
 
-/* placement */
-.boxNavaid{ grid-column: 1; }
-.boxMain{ grid-column: 2; }
-
+.leftStack,
 .rightStack{
-  grid-column: 3;
   display:flex;
   flex-direction:column;
-  gap: 10px;
+  gap:10px;
 }
 
-/* --- GLASS PANELS --- */
+/* PANELS */
 .box{
-  background:
-    linear-gradient(180deg, rgba(255,255,255,.05), transparent 40%),
-    var(--glassBg);
+  background: linear-gradient(180deg, var(--panelBg2) 0%, var(--panelBg) 100%);
+  padding: 10px;
+  border-radius: 0;
 
-  border:1px solid var(--blueSoft);
-  border-radius:12px;
-  padding:12px;
+  border-top: 1px solid #fff;
+  border-left: 1px solid #fff;
+  border-right: 1px solid #6f6f6f;
+  border-bottom: 1px solid #6f6f6f;
 
-  box-shadow:
-    0 0 24px var(--blueGlow),
-    0 0 0 1px rgba(0,0,0,.65) inset;
-
-  backdrop-filter: blur(14px);
+  box-shadow: 0 0 0 1px rgba(0,0,0,.18) inset;
 }
 
 .boxTitle{
-  font-size:12px;
-  letter-spacing:.24em;
-  color:var(--yellow);
-  text-transform:uppercase;
-  margin-bottom:10px;
-  border-bottom:1px solid var(--yellowSoft);
-  padding-bottom:6px;
-  font-weight:900;
+  font-size: 12px;
+  letter-spacing: .22em;
+  text-transform: uppercase;
+  font-weight: 900;
+  color: #fff;
+
+  margin: -10px -10px 10px -10px;
+  padding: 6px 8px;
+
+  background: linear-gradient(180deg, #7ea2d6 0%, var(--titleBlue1) 35%, var(--titleBlue2) 100%);
+  border-bottom: 1px solid rgba(0,0,0,.35);
+  border-top: 1px solid rgba(255,255,255,.45);
+
+  text-shadow: 0 1px 0 rgba(0,0,0,.45);
 }
 
-/* section headings inside combined window */
 .sectionTitle{
-  font-size:12px;
-  letter-spacing:.18em;
-  color: rgba(255,255,255,.86);
-  text-transform:uppercase;
-  font-weight:900;
+  font-size: 11px;
+  letter-spacing:.16em;
+  text-transform: uppercase;
+  font-weight: 900;
+  color: #1b1b1b;
   margin: 6px 0 8px;
+  text-shadow: 0 1px 0 rgba(255,255,255,.65);
 }
 
 .dividerLine{
-  border-top: 1px solid var(--whiteLine);
-  opacity: .55;
-  margin: 12px 0;
+  border-top: 1px solid rgba(0,0,0,.25);
+  border-bottom: 1px solid rgba(255,255,255,.55);
+  margin: 10px 0;
 }
 
-/* inputs */
 .formGrid{
   display:grid;
   grid-template-columns: 1fr;
   gap: 10px;
 }
-
-/* a little tighter inside main box */
-.formGridMain{
-  margin-bottom: 4px;
-}
+.formGridMain{ margin-bottom: 2px; }
 
 .field .label{
-  font-size: 11px;
-  color: rgba(255,255,255,.8);
+  font-size: 10.5px;
+  color: #222;
   letter-spacing: .14em;
-  margin-bottom: 6px;
+  margin-bottom: 4px;
 }
 
 input, select{
   width:100%;
-  padding:10px;
+  padding: 8px 8px;
+  border-radius: 0;
+  font-family: var(--font);
+  color: #111;
+  background: #fff;
 
-  background:rgba(5,8,15,.65);
-  border:1px solid var(--blueSoft);
-  color:var(--text);
-  font-family:var(--font);
-  border-radius:10px;
+  border-top: 1px solid #6f6f6f;
+  border-left: 1px solid #6f6f6f;
+  border-right: 1px solid #fff;
+  border-bottom: 1px solid #fff;
+
+  box-shadow: 0 0 0 1px rgba(0,0,0,.15) inset;
   outline:none;
-
-  box-shadow:
-    0 0 10px rgba(18,60,140,.15),
-    0 0 0 1px rgba(0,0,0,.65) inset;
-
-  backdrop-filter: blur(8px);
 }
+
+input::placeholder{ color: rgba(0,0,0,.45); }
 
 input:focus, select:focus{
-  border-color:var(--yellow);
   box-shadow:
-    0 0 0 2px rgba(255,204,0,.15),
-    0 0 16px var(--yellowGlow);
+    0 0 0 2px rgba(26,79,156,.25),
+    0 0 0 1px rgba(0,0,0,.15) inset;
 }
 
-/* buttons */
-.btnRun{
-  padding:12px;
-  background:linear-gradient(180deg, rgba(255,204,0,.15), rgba(255,204,0,.05));
-  border:1px solid var(--yellow);
-  color:var(--yellow);
-  font-weight:900;
-  letter-spacing:.18em;
-  border-radius:12px;
+.btnRun, .btnSmall, .dockBtn{
+  border-radius: 0;
   cursor:pointer;
-  text-transform:uppercase;
-  box-shadow:0 0 18px var(--yellowGlow);
+  text-transform: uppercase;
+  font-family: var(--font);
+  font-weight: 900;
+
+  background: linear-gradient(180deg, #fff 0%, #e7e7e7 45%, #cfcfcf 100%);
+  color: #111;
+
+  border-top: 1px solid #fff;
+  border-left: 1px solid #fff;
+  border-right: 1px solid #6f6f6f;
+  border-bottom: 1px solid #6f6f6f;
+
+  box-shadow: 0 0 0 1px rgba(0,0,0,.18) inset;
 }
 
-.btnRun:hover{ background:rgba(255,204,0,.18); }
+.btnRun{
+  padding: 10px 12px;
+  letter-spacing: .18em;
+}
 
 .btnSmall{
-  padding:10px 12px;
-  background:rgba(255,204,0,.10);
-  border:1px solid rgba(255,204,0,.55);
-  color:var(--yellow);
-  font-weight:900;
-  letter-spacing:.10em;
-  border-radius:10px;
-  cursor:pointer;
-  text-transform:uppercase;
+  padding: 8px 10px;
+  letter-spacing: .12em;
 }
 
-.btnSmall:hover{ background:rgba(255,204,0,.16); }
+.dockBtn{
+  padding: 12px 8px;
+  letter-spacing: .14em;
+}
 
-/* console blocks */
+.dockBtn.isOn{
+  background: linear-gradient(180deg, #fff8d5 0%, #ffe07a 50%, #f0c54f 100%);
+  box-shadow:
+    0 0 0 2px rgba(255,204,0,.55) inset,
+    0 0 0 1px rgba(0,0,0,.20) inset;
+}
+
+.btnRun:hover, .btnSmall:hover, .dockBtn:hover{ filter: brightness(1.05); }
+.btnRun:active, .btnSmall:active, .dockBtn:active{
+  transform: translateY(1px);
+  background: #d8d8d8;
+  border-top: 1px solid #6f6f6f;
+  border-left: 1px solid #6f6f6f;
+  border-right: 1px solid #fff;
+  border-bottom: 1px solid #fff;
+}
+
 .console{
   margin:0;
-  padding:12px;
-  background:var(--glassBg2);
-  border:1px solid var(--blueSoft);
-  border-radius:12px;
+  padding:10px;
+  border-radius: 0;
 
-  box-shadow:
-    0 0 20px var(--blueGlow),
-    0 0 0 1px rgba(0,0,0,.65) inset;
+  background: #fff;
+  color: #111;
 
-  backdrop-filter: blur(12px);
+  border-top: 1px solid #6f6f6f;
+  border-left: 1px solid #6f6f6f;
+  border-right: 1px solid #fff;
+  border-bottom: 1px solid #fff;
+
+  box-shadow: 0 0 0 1px rgba(0,0,0,.15) inset;
 
   font-size: 13px;
-  line-height: 1.3;
+  line-height: 1.28;
   white-space: pre-wrap;
-
-  min-height: unset;
 }
 
-/* if a panel gets huge, scroll instead of stretching forever */
-.wxConsole,
-.runwayConsole,
-.rvrConsole{
+.wxConsole, .runwayConsole, .rvrConsole{
   max-height: 260px;
   overflow:auto;
 }
 
-/* departure highlight */
 .depConsole{
-  border-color: rgba(255,204,0,.45);
+  box-shadow:
+    0 0 0 2px rgba(255,204,0,.45) inset,
+    0 0 0 1px rgba(0,0,0,.15) inset;
 }
 
-/* PROCEDURE output highlighting */
-.depLabel{
-  color: rgba(255,255,255,.9);
-  font-weight: 900;
-  letter-spacing: .08em;
-}
-.depValue{
-  color: rgba(120,180,255,1);
-  font-weight: 900;
-  text-shadow: 0 0 12px rgba(18,60,140,.18);
-}
-.depNotes{
-  color: rgba(255,255,255,.85);
-}
+.depLabel{ color:#111; font-weight:900; letter-spacing:.06em; }
+.depValue{ color: var(--linkBlue); font-weight:900; }
+.depNotes{ color:#222; }
 
-/* routes area */
+/* ROUTES */
 .tableWrap{
   overflow-x:auto;
-  background: transparent;
-  border: 1px solid var(--blueSoft);
-  border-radius: 12px;
+  background: #fff;
+  border-radius: 0;
   padding: 8px;
+
+  border-top: 1px solid #6f6f6f;
+  border-left: 1px solid #6f6f6f;
+  border-right: 1px solid #fff;
+  border-bottom: 1px solid #fff;
+
+  box-shadow: 0 0 0 1px rgba(0,0,0,.15) inset;
 }
 
 .routesTable{
@@ -306,60 +333,46 @@ input:focus, select:focus{
   min-width: 100%;
 }
 
-.routesTable th,
-.routesTable td{
-  padding: 8px 10px;
-  border-bottom: 1px solid rgba(255,204,0,.12);
+.routesTable th, .routesTable td{
+  padding: 7px 10px;
+  border-bottom: 1px solid rgba(0,0,0,.12);
   white-space: nowrap;
   font-size: 13px;
 }
 
 .routesTable th{
-  color:var(--yellow);
+  color:#0d2f5f;
   font-weight:900;
-  border-bottom:1px solid var(--yellowSoft);
+  border-bottom: 2px solid rgba(26,79,156,.35);
   letter-spacing:.14em;
   text-transform: uppercase;
+  background: rgba(26,79,156,.06);
 }
 
-.routesTable tr:hover td{
-  background:rgba(255,204,0,.05);
-}
+.routesTable tr:hover td{ background: rgba(26,79,156,.06); }
 
-/* tokens */
-.navaidToken{
-  color: rgba(120,180,255,1);
+.navaidToken, .airportToken{
+  color: var(--linkBlue);
   font-weight:900;
   cursor:pointer;
   text-decoration: underline;
   text-underline-offset: 2px;
 }
-.navaidToken:hover{ color: var(--yellow); }
 
-.airportToken{
-  color:var(--yellow);
-  font-weight:900;
-  cursor:pointer;
-  text-decoration: underline;
-  text-underline-offset: 2px;
-}
-.airportToken:hover{ filter:brightness(1.15); }
-
-/* NAVAID PANEL */
+/* NAVAID GRID */
 .navaidGrid{
-  display: grid;
+  display:grid;
   grid-template-columns: 1fr 1fr;
-  gap: 10px;
+  gap:10px;
 }
-
 @media (max-width: 1200px){
   .navaidGrid{ grid-template-columns: 1fr; }
 }
 
 .navaidSectionTitle{
-  color:var(--yellow);
-  letter-spacing:.18em;
-  font-size: 12px;
+  color:#0d2f5f;
+  letter-spacing:.16em;
+  font-size: 11px;
   text-transform: uppercase;
   margin: 6px 0;
   font-weight: 900;
@@ -367,56 +380,39 @@ input:focus, select:focus{
 
 .navaidConsole{ min-height: 120px; }
 
+.navaidOverlaps, .navaidResults{
+  background: #fff;
+  border-top: 1px solid #6f6f6f;
+  border-left: 1px solid #6f6f6f;
+  border-right: 1px solid #fff;
+  border-bottom: 1px solid #fff;
+  box-shadow: 0 0 0 1px rgba(0,0,0,.15) inset;
+}
+
 .navaidOverlaps{
-  border:1px solid var(--blueSoft);
-  background: rgba(0,0,0,.18);
-  border-radius: 12px;
   min-height:60px;
   max-height:120px;
   overflow:auto;
 }
-
-.navaidOverlapRow{
-  display:grid;
-  grid-template-columns: 70px 90px 1fr 90px;
-  gap:8px;
-  padding:8px 10px;
-  border-bottom:1px solid rgba(255,204,0,.12);
-  cursor:pointer;
-}
-.navaidOverlapRow:hover{ background:rgba(255,204,0,.06); }
-
-.ovIdent{ color:var(--yellow); font-weight:900; }
-.ovType{ color:rgba(255,255,255,.88); }
-.ovName{ color:rgba(255,255,255,.88); }
-.ovDist{ color:rgba(120,180,255,1); font-weight:900; text-align:right; }
-
 .navaidResults{
   margin-top:10px;
-  border:1px solid var(--blueSoft);
-  background: rgba(0,0,0,.18);
-  border-radius:12px;
   max-height:260px;
   overflow:auto;
 }
 
-.navaidRow{
+.navaidOverlapRow, .navaidRow{
   display:grid;
   grid-template-columns: 70px 90px 1fr 90px;
   gap:8px;
-  padding:8px 10px;
-  border-bottom:1px solid rgba(255,204,0,.12);
+  padding:7px 10px;
+  border-bottom:1px solid rgba(0,0,0,.10);
   cursor:pointer;
 }
-.navaidRow:hover{ background:rgba(255,204,0,.06); }
+.navaidOverlapRow:hover, .navaidRow:hover{ background: rgba(26,79,156,.08); }
+.ovDist, .cellDist{ text-align:right; }
 
-.cellIdent{ color:var(--yellow); font-weight:900; }
-.cellType{ color:rgba(255,255,255,.88); }
-.cellName{ color:rgba(255,255,255,.88); }
-.cellDist{ color:rgba(120,180,255,1); font-weight:900; text-align:right; }
-
-/* --- WEATHER PANEL header bits --- */
-.wxHeader{
+/* WX / CONFIG / RVR */
+.wxHeader, .runwayHeader, .rvrHeader{
   display:flex;
   align-items:center;
   justify-content:space-between;
@@ -424,181 +420,162 @@ input:focus, select:focus{
   margin-bottom: 8px;
 }
 
-.wxTitle{
-  color: var(--yellow);
-  font-weight: 900;
-  letter-spacing: .18em;
-  font-size: 12px;
+.wxTitle, .runwayTitle, .rvrTitle{
+  color:#0d2f5f;
+  font-weight:900;
+  letter-spacing:.16em;
+  font-size: 11px;
   text-transform: uppercase;
 }
 
-.wxControls{
+.wxControls, .rvrControls{
   display:flex;
   gap:8px;
   margin-bottom: 8px;
 }
+.wxControls input, .rvrControls input{ flex:1; }
 
-.wxControls input{ flex: 1; }
-
-.wxChips{
+.wxChips, .rvrChips{
   display:flex;
-  flex-wrap: wrap;
-  gap: 6px;
+  flex-wrap:wrap;
+  gap:6px;
   margin-bottom: 8px;
 }
 
-/* square, smaller chip */
-.wxChip{
+.wxChip, .rvrChip{
   display:flex;
   align-items:center;
   gap:8px;
-  padding:6px 8px;
-  border-radius:10px;
-  border:1px solid rgba(255,204,0,.35);
-  background: rgba(255,204,0,.07);
-  color: var(--yellow);
-  font-weight: 900;
-  letter-spacing: .06em;
+  padding:5px 7px;
+  background: rgba(26,79,156,.10);
+  color:#0d2f5f;
+  font-weight:900;
+  letter-spacing:.06em;
+
+  border-top: 1px solid #fff;
+  border-left: 1px solid #fff;
+  border-right: 1px solid #6f6f6f;
+  border-bottom: 1px solid #6f6f6f;
 }
 
-.wxChip button{
-  border:1px solid rgba(255,255,255,.25);
-  background: rgba(0,0,0,.25);
-  color: rgba(255,255,255,.9);
-  cursor:pointer;
-  border-radius:6px;
+.wxChip button, .rvrChip button{
   padding: 1px 6px;
   font-weight: 900;
-  line-height: 1.2;
-}
-
-.wxChip button:hover{ background: rgba(0,0,0,.4); }
-
-/* metar formatting helpers */
-.wxBlockLine{
-  border-top: 1px solid var(--whiteLine);
-  margin: 10px 0;
-}
-.wxIdent{
-  color: var(--yellow);
-  font-weight: 900;
-}
-.wxCatVFR{ color: var(--catVFR); font-weight: 900; }
-.wxCatMVFR{ color: var(--catMVFR); font-weight: 900; }
-.wxCatIFR{ color: var(--catIFR); font-weight: 900; }
-.wxCatLIFR{ color: var(--catLIFR); font-weight: 900; }
-
-/* --- RUNWAY HELPER --- */
-.runwayHeader{
-  display:flex;
-  align-items:center;
-  justify-content:space-between;
-  gap:10px;
-  margin-bottom: 8px;
-}
-
-.runwayTitle{
-  color: var(--yellow);
-  font-weight: 900;
-  letter-spacing: .18em;
-  font-size: 12px;
-  text-transform: uppercase;
-}
-
-.runwayBlockLine{
-  border-top: 1px solid var(--whiteLine);
-  margin: 10px 0;
-}
-
-.runwayIdent{
-  color: var(--yellow);
-  font-weight: 900;
-}
-
-.runwayConfig{
-  color: rgba(120,180,255,1);
-  font-weight: 900;
-  text-shadow: 0 0 12px rgba(18,60,140,.18);
-}
-
-.runwayHint{
-  color: rgba(255,255,255,.82);
-}
-
-/* --- RVR PANEL --- */
-.rvrHeader{
-  display:flex;
-  align-items:center;
-  justify-content:space-between;
-  gap:10px;
-  margin-bottom: 8px;
-}
-
-.rvrTitle{
-  color: var(--yellow);
-  font-weight: 900;
-  letter-spacing: .18em;
-  font-size: 12px;
-  text-transform: uppercase;
-}
-
-.rvrControls{
-  display:flex;
-  gap:8px;
-  margin-bottom: 8px;
-}
-.rvrControls input{ flex: 1; }
-
-.rvrChips{
-  display:flex;
-  flex-wrap: wrap;
-  gap: 6px;
-  margin-bottom: 8px;
-}
-
-.rvrChip{
-  display:flex;
-  align-items:center;
-  gap:8px;
-  padding:6px 8px;
-  border-radius:10px;
-  border:1px solid rgba(255,204,0,.35);
-  background: rgba(255,204,0,.07);
-  color: var(--yellow);
-  font-weight: 900;
-  letter-spacing: .06em;
-}
-
-.rvrChip button{
-  border:1px solid rgba(255,255,255,.25);
-  background: rgba(0,0,0,.25);
-  color: rgba(255,255,255,.9);
   cursor:pointer;
-  border-radius:6px;
-  padding: 1px 6px;
-  font-weight: 900;
-  line-height: 1.2;
+  background: #e6e6e6;
+  color:#111;
+
+  border-top: 1px solid #fff;
+  border-left: 1px solid #fff;
+  border-right: 1px solid #6f6f6f;
+  border-bottom: 1px solid #6f6f6f;
 }
 
-.rvrChip button:hover{ background: rgba(0,0,0,.4); }
-
-.rvrBlockLine{
-  border-top: 1px solid var(--whiteLine);
+.wxBlockLine, .runwayBlockLine, .rvrBlockLine{
+  border-top: 1px solid rgba(0,0,0,.20);
+  border-bottom: 1px solid rgba(255,255,255,.55);
   margin: 10px 0;
 }
 
-.rvrIdent{
-  color: var(--yellow);
-  font-weight: 900;
-}
+.wxIdent, .runwayIdent, .rvrIdent{ font-weight:900; }
+
+.wxCatVFR{ color: var(--catVFR); font-weight:900; }
+.wxCatMVFR{ color: var(--catMVFR); font-weight:900; }
+.wxCatIFR{  color: var(--catIFR);  font-weight:900; }
+.wxCatLIFR{ color: var(--catLIFR); font-weight:900; }
+
+.runwayConfig{ color: var(--linkBlue); font-weight:900; }
+.runwayHint, .rvrHint{ color:#222; }
 
 .rvrLink{
-  color: rgba(120,180,255,1);
+  color: var(--linkBlue);
   text-decoration: underline;
   text-underline-offset: 2px;
 }
 
-.rvrHint{
-  color: rgba(255,255,255,.82);
-  margin-top: 4px;
+/* DARK MODE */
+body.dark-mode{
+  background:#000;
+  color:#e8e8e8;
+}
+
+body.dark-mode .topbar{
+  background: linear-gradient(180deg, #2a2a2a 0%, #1d1d1d 45%, #141414 100%);
+  border-top: 1px solid #3a3a3a;
+  border-left: 1px solid #3a3a3a;
+  border-right: 1px solid #000;
+  border-bottom: 1px solid #000;
+}
+
+body.dark-mode .brand,
+body.dark-mode .clock{
+  color:#ffcc00;
+  text-shadow:none;
+}
+
+body.dark-mode .mainGrid{
+  background:#0c0c0c;
+  border-top:1px solid #222;
+  border-left:1px solid #222;
+}
+
+body.dark-mode .box{
+  background: linear-gradient(180deg,#1a2235 0%,#131a2b 100%);
+  border-top:1px solid #2a344a;
+  border-left:1px solid #2a344a;
+  border-right:1px solid #000;
+  border-bottom:1px solid #000;
+}
+
+body.dark-mode .boxTitle{
+  background: linear-gradient(180deg,#243a6b 0%,#16284a 100%);
+  color:#ffcc00;
+}
+
+body.dark-mode .console,
+body.dark-mode input,
+body.dark-mode select,
+body.dark-mode .tableWrap,
+body.dark-mode .navaidOverlaps,
+body.dark-mode .navaidResults{
+  background:#0b1220;
+  color:#e8e8e8;
+  border-top:1px solid #000;
+  border-left:1px solid #000;
+  border-right:1px solid #2a344a;
+  border-bottom:1px solid #2a344a;
+}
+
+body.dark-mode .routesTable th{
+  color:#ffcc00;
+  background: rgba(255,204,0,.08);
+  border-bottom: 2px solid rgba(255,204,0,.25);
+}
+
+body.dark-mode .btnRun,
+body.dark-mode .btnSmall,
+body.dark-mode .dockBtn{
+  background: #1b253b;
+  color:#ffcc00;
+}
+
+body.dark-mode .dockBtn.isOn{
+  background: linear-gradient(180deg, #2b3d63 0%, #1b2a4b 60%, #141f37 100%);
+  box-shadow:
+    0 0 0 2px rgba(255,204,0,.35) inset,
+    0 0 0 1px rgba(0,0,0,.35) inset;
+}
+
+body.dark-mode .wxTitle,
+body.dark-mode .runwayTitle,
+body.dark-mode .rvrTitle,
+body.dark-mode .navaidSectionTitle{
+  color:#ffcc00;
+}
+
+body.dark-mode .navaidToken,
+body.dark-mode .airportToken,
+body.dark-mode .rvrLink,
+body.dark-mode .runwayConfig{
+  color:#5aa7ff;
 }

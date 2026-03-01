@@ -1,4 +1,8 @@
 // app.js
+
+/* =========================
+   TSV HELPERS
+========================= */
 async function loadTSV(path) {
   const res = await fetch(path);
   if (!res.ok) throw new Error(`Failed to load ${path} (${res.status})`);
@@ -35,7 +39,120 @@ function escHtml(s) {
     .replaceAll("'", "&#039;");
 }
 
-/* -------------------- NAVAID + AIRPORT SUPPORT -------------------- */
+/* =========================
+   THEME TOGGLE
+========================= */
+const THEME_KEY = "ids4_theme_mode";
+
+function applyTheme(mode){
+  const btn = document.getElementById("themeToggle");
+  if(mode === "dark"){
+    document.body.classList.add("dark-mode");
+    if (btn) btn.textContent = "LIGHT";
+  } else {
+    document.body.classList.remove("dark-mode");
+    if (btn) btn.textContent = "DARK";
+  }
+}
+
+function initTheme(){
+  const saved = localStorage.getItem(THEME_KEY);
+  applyTheme(saved === "dark" ? "dark" : "light");
+
+  const btn = document.getElementById("themeToggle");
+  if(!btn) return;
+  btn.addEventListener("click", () => {
+    const isDark = document.body.classList.contains("dark-mode");
+    const newMode = isDark ? "light" : "dark";
+    localStorage.setItem(THEME_KEY, newMode);
+    applyTheme(newMode);
+  });
+}
+
+/* =========================
+   WINDOW / PANEL TOGGLES
+========================= */
+const DOCK_KEY = "ids4_dock_visibility_v1";
+
+function getDockState() {
+  try {
+    const raw = localStorage.getItem(DOCK_KEY);
+    const obj = raw ? JSON.parse(raw) : null;
+    if (obj && typeof obj === "object") return obj;
+  } catch {}
+  return {
+    boxPrd: true,
+    boxNavaid: true,
+    boxMain: true,
+    boxWx: true,
+    boxRunway: true,
+    boxRvr: true
+  };
+}
+
+function saveDockState(state) {
+  localStorage.setItem(DOCK_KEY, JSON.stringify(state));
+}
+
+function setPanelVisible(panelId, visible) {
+  const el = document.getElementById(panelId);
+  if (!el) return;
+  el.classList.toggle("isHidden", !visible);
+}
+
+function syncDockButtons(state) {
+  const btns = document.querySelectorAll(".dockBtn[data-target]");
+  btns.forEach(b => {
+    const target = b.getAttribute("data-target");
+    const on = !!state[target];
+    b.classList.toggle("isOn", on);
+    b.setAttribute("aria-pressed", on ? "true" : "false");
+  });
+}
+
+function applyDockState(state) {
+  Object.keys(state).forEach(id => setPanelVisible(id, !!state[id]));
+  syncDockButtons(state);
+
+  const leftWrap = document.querySelector(".leftStack");
+  const rightWrap = document.querySelector(".rightStack");
+  const mainBox = document.getElementById("boxMain");
+
+  if (leftWrap) {
+    const anyLeftOn = !!state.boxPrd || !!state.boxNavaid;
+    leftWrap.classList.toggle("isHidden", !anyLeftOn);
+  }
+  if (rightWrap) {
+    const anyRightOn = !!state.boxWx || !!state.boxRunway || !!state.boxRvr;
+    rightWrap.classList.toggle("isHidden", !anyRightOn);
+  }
+  if (mainBox) {
+    mainBox.classList.toggle("isHidden", !state.boxMain);
+  }
+}
+
+function wireDock() {
+  const state = getDockState();
+  applyDockState(state);
+
+  const wrap = document.getElementById("btnGrid");
+  if (!wrap) return;
+
+  wrap.addEventListener("click", (e) => {
+    const btn = e.target.closest(".dockBtn[data-target]");
+    if (!btn) return;
+
+    const target = btn.getAttribute("data-target");
+    const cur = getDockState();
+    cur[target] = !cur[target];
+    saveDockState(cur);
+    applyDockState(cur);
+  });
+}
+
+/* =========================
+   NAVAID + AIRPORT SUPPORT
+========================= */
 const KLGA_LAT = 40.7772;
 const KLGA_LON = -73.8726;
 
@@ -47,7 +164,6 @@ let airportsRows = [];
 let airportByIdent = new Map();
 let airportSearchIndex = [];
 
-/* ---------- math / format helpers ---------- */
 function toNumberOrNaN(v) {
   const n = Number(norm(v));
   return Number.isFinite(n) ? n : NaN;
@@ -80,7 +196,6 @@ function freqDisplayFromFrequencyKhz(raw) {
   return `${n} kHz`;
 }
 
-/* ---------- build indices ---------- */
 function buildNavaidMaps(rows) {
   navaidByIdent = new Map();
   navaidSearchIndex = [];
@@ -141,14 +256,14 @@ function buildAirportMaps(rows) {
   airportSearchIndex.sort((a, b) => a.IDENT.localeCompare(b.IDENT));
 }
 
-/* ---------- display (selected) ---------- */
 function setInfoDefault() {
   const info = document.getElementById("navaidInfo");
-  info.textContent = "";
+  if (info) info.textContent = "";
 }
 
 function setNavaidInfoText(obj) {
   const info = document.getElementById("navaidInfo");
+  if (!info) return;
   if (!obj) return setInfoDefault();
 
   const latStr = Number.isFinite(obj.LAT) ? obj.LAT.toFixed(6) : "(unknown)";
@@ -170,6 +285,7 @@ function setNavaidInfoText(obj) {
 
 function setAirportInfoText(obj) {
   const info = document.getElementById("navaidInfo");
+  if (!info) return;
   if (!obj) return setInfoDefault();
 
   info.textContent =
@@ -179,9 +295,10 @@ function setAirportInfoText(obj) {
     `NAME:  ${obj.NAME || "(unknown)"}`;
 }
 
-/* ---------- overlaps ---------- */
 function renderOverlaps(ident, selectedIndex = 0) {
   const wrap = document.getElementById("navaidOverlaps");
+  if (!wrap) return;
+
   const key = norm(ident).toUpperCase();
   const list = navaidByIdent.get(key) || [];
 
@@ -194,8 +311,7 @@ function renderOverlaps(ident, selectedIndex = 0) {
     const distStr = Number.isFinite(o.DIST_NM) && o.DIST_NM !== Infinity
       ? `${o.DIST_NM.toFixed(1)} NM`
       : "—";
-
-    const style = idx === selectedIndex ? `style="background: rgba(255,204,0,.08);"` : "";
+    const style = idx === selectedIndex ? `style="background: rgba(255,204,0,.10);"` : "";
 
     return `
       <div class="navaidOverlapRow" data-ident="${escHtml(o.IDENT)}" data-idx="${idx}" ${style}>
@@ -209,8 +325,9 @@ function renderOverlaps(ident, selectedIndex = 0) {
 }
 
 function setOverlapsBlank() {
-  document.getElementById("navaidOverlaps").innerHTML =
-    `<div class="console" style="min-height:auto;">—</div>`;
+  const el = document.getElementById("navaidOverlaps");
+  if (!el) return;
+  el.innerHTML = `<div class="console" style="min-height:auto;">—</div>`;
 }
 
 function selectNavaid(ident, idx = 0) {
@@ -219,8 +336,8 @@ function selectNavaid(ident, idx = 0) {
 
   if (!list || !list.length) {
     setInfoDefault();
-    document.getElementById("navaidOverlaps").innerHTML =
-      `<div class="console" style="min-height:auto;">No NAVAID data for IDENT: ${escHtml(key)}</div>`;
+    const el = document.getElementById("navaidOverlaps");
+    if (el) el.innerHTML = `<div class="console" style="min-height:auto;">No NAVAID data for IDENT: ${escHtml(key)}</div>`;
     return;
   }
 
@@ -236,18 +353,17 @@ function selectAirport(ident) {
   setOverlapsBlank();
 }
 
-/* ---------- unified search (navaids + airports) ---------- */
 function renderUnifiedSearch(q) {
   const resultsEl = document.getElementById("navaidResults");
-  const query = norm(q).toUpperCase();
+  if (!resultsEl) return;
 
+  const query = norm(q).toUpperCase();
   if (!query) {
     resultsEl.innerHTML = "";
     return;
   }
 
   const hits = [];
-
   for (const v of navaidSearchIndex) {
     if (v.key.includes(query)) {
       hits.push(v);
@@ -298,26 +414,30 @@ function wireUnifiedPanelClicks() {
   setInfoDefault();
   setOverlapsBlank();
 
-  search.addEventListener("input", () => renderUnifiedSearch(search.value));
+  if (search) search.addEventListener("input", () => renderUnifiedSearch(search.value));
 
-  results.addEventListener("click", (e) => {
-    const row = e.target.closest(".navaidRow");
-    if (!row) return;
+  if (results) {
+    results.addEventListener("click", (e) => {
+      const row = e.target.closest(".navaidRow");
+      if (!row) return;
 
-    const kind = row.getAttribute("data-kind");
-    const ident = row.getAttribute("data-ident");
+      const kind = row.getAttribute("data-kind");
+      const ident = row.getAttribute("data-ident");
 
-    if (kind === "AIRPORT") selectAirport(ident);
-    else selectNavaid(ident, 0);
-  });
+      if (kind === "AIRPORT") selectAirport(ident);
+      else selectNavaid(ident, 0);
+    });
+  }
 
-  overlaps.addEventListener("click", (e) => {
-    const row = e.target.closest(".navaidOverlapRow");
-    if (!row) return;
-    const ident = row.getAttribute("data-ident");
-    const idx = row.getAttribute("data-idx");
-    selectNavaid(ident, idx);
-  });
+  if (overlaps) {
+    overlaps.addEventListener("click", (e) => {
+      const row = e.target.closest(".navaidOverlapRow");
+      if (!row) return;
+      const ident = row.getAttribute("data-ident");
+      const idx = row.getAttribute("data-idx");
+      selectNavaid(ident, idx);
+    });
+  }
 
   document.addEventListener("click", (e) => {
     const nav = e.target.closest(".navaidToken");
@@ -326,7 +446,6 @@ function wireUnifiedPanelClicks() {
       selectNavaid(ident, 0);
       return;
     }
-
     const apt = e.target.closest(".airportToken");
     if (apt) {
       const ident = apt.getAttribute("data-airport");
@@ -335,7 +454,6 @@ function wireUnifiedPanelClicks() {
   });
 }
 
-/* route: dots + clickable tokens */
 function renderRouteWithLinks(routeStr) {
   const rawTokens = norm(routeStr).split(/\s+/g).filter(Boolean);
 
@@ -354,7 +472,7 @@ function renderRouteWithLinks(routeStr) {
   return displayTokens.join(".");
 }
 
-/* -------------------- ROUTES TABLE -------------------- */
+/* ROUTES */
 function renderRoutesTable(rows) {
   if (!rows.length) return `<div class="console" style="min-height:auto;">No routes found.</div>`;
 
@@ -385,15 +503,10 @@ function renderRoutesTable(rows) {
     `;
   }).join("");
 
-  const footer = `
-      </tbody>
-    </table>
-  `;
-
-  return header + body + footer;
+  return header + body + `</tbody></table>`;
 }
 
-/* -------------------- MATCHING -------------------- */
+/* MATCHING */
 function matchAirspace(ruleVal, inputVal) {
   const r = norm(ruleVal);
   const v = norm(inputVal);
@@ -402,13 +515,7 @@ function matchAirspace(ruleVal, inputVal) {
   if (v === "") return false;
 
   const V = v.toUpperCase();
-
-  const reqParts = r
-    .toUpperCase()
-    .split(/\s*\+\s*|\s*,\s*|\s*&\s*/g)
-    .map(s => s.trim())
-    .filter(Boolean);
-
+  const reqParts = r.toUpperCase().split(/\s*\+\s*|\s*,\s*|\s*&\s*/g).map(s => s.trim()).filter(Boolean);
   return reqParts.every(part => V.includes(part));
 }
 
@@ -422,14 +529,14 @@ function matchField(ruleVal, inputVal) {
   return r.toUpperCase() === v.toUpperCase();
 }
 
-/* -------------------- DATA -------------------- */
+/* DATA */
 let lgaConfigRows = [];
 let jfkConfigRows = [];
 let gatesRows = [];
 let depRulesRows = [];
 let routesRows = [];
 
-/* -------------------- WEATHER (VATSIM METAR) -------------------- */
+/* WX */
 const WX_STORAGE_KEY = "ids4_wx_watchlist_v2";
 let wxWatchlist = [];
 
@@ -439,9 +546,7 @@ function loadWxWatchlist() {
     const arr = raw ? JSON.parse(raw) : [];
     if (Array.isArray(arr)) wxWatchlist = arr.map(x => norm(x).toUpperCase()).filter(Boolean);
     else wxWatchlist = [];
-  } catch {
-    wxWatchlist = [];
-  }
+  } catch { wxWatchlist = []; }
   if (!wxWatchlist.length) wxWatchlist = ["KLGA", "KJFK", "KEWR", "KTEB"];
 }
 
@@ -451,6 +556,7 @@ function saveWxWatchlist() {
 
 function renderWxChips() {
   const wrap = document.getElementById("wxChips");
+  if (!wrap) return;
   wrap.innerHTML = wxWatchlist.map(icao => `
     <div class="wxChip">
       <span>${escHtml(icao)}</span>
@@ -475,13 +581,11 @@ async function fetchVatsimMetar(icao) {
   return exact || lines[0] || `${id} (no METAR)`;
 }
 
-/* --- Flight category --- */
 function parseVisSM(metar) {
   const m = metar.match(/(\d+\s+\d+\/\d+|\d+\/\d+|\d+)\s*SM\b/);
   if (!m) return NaN;
 
   const raw = m[1].trim();
-
   if (raw.includes(" ")) {
     const [whole, frac] = raw.split(/\s+/);
     const [a,b] = frac.split("/").map(Number);
@@ -489,13 +593,11 @@ function parseVisSM(metar) {
     if (!Number.isFinite(w) || !Number.isFinite(a) || !Number.isFinite(b) || b === 0) return NaN;
     return w + (a/b);
   }
-
   if (raw.includes("/")) {
     const [a,b] = raw.split("/").map(Number);
     if (!Number.isFinite(a) || !Number.isFinite(b) || b === 0) return NaN;
     return a/b;
   }
-
   const n = Number(raw);
   return Number.isFinite(n) ? n : NaN;
 }
@@ -507,10 +609,7 @@ function parseCeilFt(metar) {
   let minFt = Infinity;
   for (const x of layers) {
     const h = Number(x[2]);
-    if (Number.isFinite(h)) {
-      const ft = h * 100;
-      if (ft < minFt) minFt = ft;
-    }
+    if (Number.isFinite(h)) minFt = Math.min(minFt, h * 100);
   }
   return minFt;
 }
@@ -542,11 +641,9 @@ function renderMetarLineHtml(icao, metar) {
 
 async function refreshWx() {
   const out = document.getElementById("wxOut");
+  if (!out) return;
 
-  if (!wxWatchlist.length) {
-    out.innerHTML = "";
-    return;
-  }
+  if (!wxWatchlist.length) { out.innerHTML = ""; return; }
 
   out.textContent = "Fetching METARs...\n";
 
@@ -567,19 +664,15 @@ async function refreshWx() {
     }
   }
 
-  const workers = Array.from({ length: Math.min(concurrency, wxWatchlist.length) }, worker);
-  await Promise.all(workers);
+  await Promise.all(Array.from({ length: Math.min(concurrency, wxWatchlist.length) }, worker));
 
-  const blocks = results
+  out.innerHTML = results
     .filter(Boolean)
     .map((r, idx) => {
-      const line = renderMetarLineHtml(r.icao, r.metar);
       const sep = idx === 0 ? "" : `<div class="wxBlockLine"></div>`;
-      return `${sep}<div>${line}</div>`;
+      return `${sep}<div>${renderMetarLineHtml(r.icao, r.metar)}</div>`;
     })
     .join("");
-
-  out.innerHTML = blocks;
 }
 
 function wireWxPanel() {
@@ -591,112 +684,95 @@ function wireWxPanel() {
   loadWxWatchlist();
   renderWxChips();
 
-  addBtn.addEventListener("click", () => {
-    const v = norm(addInput.value).toUpperCase();
-    if (!isLikelyIcao(v)) return;
+  if (addBtn && addInput) {
+    addBtn.addEventListener("click", () => {
+      const v = norm(addInput.value).toUpperCase();
+      if (!isLikelyIcao(v)) return;
 
-    if (!wxWatchlist.includes(v)) {
-      wxWatchlist.unshift(v);
-      wxWatchlist = wxWatchlist.slice(0, 20);
+      if (!wxWatchlist.includes(v)) {
+        wxWatchlist.unshift(v);
+        wxWatchlist = wxWatchlist.slice(0, 20);
+        saveWxWatchlist();
+        renderWxChips();
+        refreshWx();
+      }
+      addInput.value = "";
+      addInput.focus();
+    });
+
+    addInput.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") addBtn.click();
+    });
+  }
+
+  if (chips) {
+    chips.addEventListener("click", (e) => {
+      const btn = e.target.closest("button[data-icao]");
+      if (!btn) return;
+      const icao = btn.getAttribute("data-icao");
+      wxWatchlist = wxWatchlist.filter(x => x !== icao);
       saveWxWatchlist();
       renderWxChips();
       refreshWx();
-    }
+    });
+  }
 
-    addInput.value = "";
-    addInput.focus();
-  });
-
-  addInput.addEventListener("keydown", (e) => {
-    if (e.key === "Enter") addBtn.click();
-  });
-
-  chips.addEventListener("click", (e) => {
-    const btn = e.target.closest("button[data-icao]");
-    if (!btn) return;
-    const icao = btn.getAttribute("data-icao");
-    wxWatchlist = wxWatchlist.filter(x => x !== icao);
-    saveWxWatchlist();
-    renderWxChips();
-    refreshWx();
-  });
-
-  refreshBtn.addEventListener("click", refreshWx);
+  if (refreshBtn) refreshBtn.addEventListener("click", refreshWx);
 
   refreshWx();
   setInterval(refreshWx, 60000);
 }
 
-/* -------------------- RUNWAY SELECTION HELPER -------------------- */
+/* RUNWAY + RVR same as prior (kept short here) */
 function parseWindFromMetar(metar) {
   const m = norm(metar).toUpperCase();
   const w = m.match(/\b(\d{3}|VRB)(\d{2,3})(?:G(\d{2,3}))?KT\b/);
   if (!w) return { dir: "", spd: NaN, raw: "" };
-
-  const dirRaw = w[1];
-  const spd = Number(w[2]);
-  return { dir: dirRaw, spd: Number.isFinite(spd) ? spd : NaN, raw: w[0] };
+  return { dir: w[1], spd: Number(w[2]), raw: w[0] };
 }
 
 function lgaSuggestedConfigFromInputs(rawDir, rawSpd, rawCat) {
   if (!rawDir || !Number.isFinite(rawSpd)) return "";
-
   const dirStr = String(rawDir).toUpperCase();
   const spd = Number(rawSpd);
-
-  const catStr = String(rawCat || "").toUpperCase();
-  const imc = /^(IFR|LIFR|IMC)$/.test(catStr);
+  const imc = /^(IFR|LIFR|IMC)$/.test(String(rawCat || "").toUpperCase());
 
   if (dirStr === "VRB") return "Depart 31, Land ILS 22";
-
   let dir = Number(dirStr);
   if (!Number.isFinite(dir)) return "";
   dir = ((dir % 360) + 360) % 360;
 
   if (spd <= 4) return "Depart 31, Land ILS 22";
-
   if (spd <= 14) {
     if (dir >= 315 || dir <= 44) return imc ? "Depart 4, Land LOC 31" : "Depart 4, Land RNAV GPS X 31";
     if (dir >= 45 && dir <= 134) return "Depart 13, Land ILS 4";
     if (dir >= 135 && dir <= 259) return "Depart 13, Land ILS 22";
     if (dir >= 260 && dir <= 314) return "Depart 31, Land ILS 22";
-    return "";
   }
-
   if (spd <= 27) {
     if (dir >= 315 || dir <= 44) return imc ? "Depart 4, Land LOC 31" : "Depart 4, Land RNAV GPS X 31";
     if (dir >= 45 && dir <= 134) return "Depart 13, Land ILS 4";
     if (dir >= 135 && dir <= 224) return "Depart 13, Land ILS 22";
     if (dir >= 225 && dir <= 314) return "Depart 31, Land ILS 22";
-    return "";
   }
-
   if (dir <= 89) return "Depart 4, Land ILS 4";
-  if (dir >= 90 && dir <= 179) return imc ? "Depart 13, Land ILS 13" : "Depart 13, Land ILS 22 CIR 13";
-  if (dir >= 180 && dir <= 269) return "Depart 22, Land ILS 22";
-  if (dir >= 270 && dir <= 359) return "Depart 31, Land LOC 31";
-  return "";
+  if (dir <= 179) return imc ? "Depart 13, Land ILS 13" : "Depart 13, Land ILS 22 CIR 13";
+  if (dir <= 269) return "Depart 22, Land ILS 22";
+  return "Depart 31, Land LOC 31";
 }
 
 function jfkSuggestedConfigFromInputs(rawDir, rawSpd) {
   if (!rawDir || !Number.isFinite(rawSpd)) return "";
-
   const dirStr = String(rawDir).toUpperCase();
   const spd = Number(rawSpd);
-
-  if (dirStr === "VRB") return "Depart 31L/R, Land 31L/R";
-
+  if (dirStr === "VRB" || spd <= 4) return "Depart 31L/R, Land 31L/R";
   let dir = Number(dirStr);
   if (!Number.isFinite(dir)) return "";
   dir = ((dir % 360) + 360) % 360;
-
-  if (spd <= 4) return "Depart 31L/R, Land 31L/R";
-
-  if (dir >= 0 && dir <= 99) return "Depart 04L, Land 04L/R";
-  if (dir >= 100 && dir <= 159) return "Depart 13L/R, Land 13L + 22L";
-  if (dir >= 160 && dir <= 259) return "Depart 22R, Land 22L/R";
-  if (dir >= 260 && dir <= 359) return "Depart 31L/R, Land 31L/R";
-  return "";
+  if (dir <= 99) return "Depart 04L, Land 04L/R";
+  if (dir <= 159) return "Depart 13L/R, Land 13L + 22L";
+  if (dir <= 259) return "Depart 22R, Land 22L/R";
+  return "Depart 31L/R, Land 31L/R";
 }
 
 function renderRunwayHelperBlock(icao, metar) {
@@ -707,20 +783,13 @@ function renderRunwayHelperBlock(icao, metar) {
   const wind = parseWindFromMetar(m);
 
   let config = "—";
-  if (id === "KLGA") {
-    const sug = lgaSuggestedConfigFromInputs(wind.dir, wind.spd, cat);
-    config = sug || "—";
-  } else if (id === "KJFK") {
-    const sug = jfkSuggestedConfigFromInputs(wind.dir, wind.spd);
-    config = sug || "—";
-  }
+  if (id === "KLGA") config = lgaSuggestedConfigFromInputs(wind.dir, wind.spd, cat) || "—";
+  if (id === "KJFK") config = jfkSuggestedConfigFromInputs(wind.dir, wind.spd) || "—";
 
   const metarLine = renderMetarLineHtml(id, m);
-
-  const windLine =
-    wind.raw
-      ? `<div class="runwayHint">WIND: ${escHtml(wind.raw)}</div>`
-      : `<div class="runwayHint">WIND: (not found in METAR)</div>`;
+  const windLine = wind.raw
+    ? `<div class="runwayHint">WIND: ${escHtml(wind.raw)}</div>`
+    : `<div class="runwayHint">WIND: (not found in METAR)</div>`;
 
   return `
     <div>${metarLine}</div>
@@ -731,42 +800,33 @@ function renderRunwayHelperBlock(icao, metar) {
 
 async function refreshRunwayHelper() {
   const out = document.getElementById("runwayOut");
+  if (!out) return;
+
   out.textContent = "Fetching KLGA / KJFK METAR...\n";
 
   const airports = ["KLGA", "KJFK"];
   const results = [];
 
   for (const a of airports) {
-    try {
-      const metar = await fetchVatsimMetar(a);
-      results.push({ a, metar, ok: true });
-    } catch {
-      results.push({ a, metar: `${a} (error)`, ok: false });
-    }
+    try { results.push({ a, metar: await fetchVatsimMetar(a), ok: true }); }
+    catch { results.push({ a, metar: `${a} (error)`, ok: false }); }
   }
 
-  const blocks = results.map((r, idx) => {
+  out.innerHTML = results.map((r, idx) => {
     const sep = idx === 0 ? "" : `<div class="runwayBlockLine"></div>`;
-    if (!r.ok) {
-      return `${sep}<div><span class="runwayIdent">${escHtml(r.a)}</span> <span class="runwayHint">(error fetching METAR)</span></div>`;
-    }
+    if (!r.ok) return `${sep}<div><span class="runwayIdent">${escHtml(r.a)}</span> <span class="runwayHint">(error fetching METAR)</span></div>`;
     return `${sep}<div>${renderRunwayHelperBlock(r.a, r.metar)}</div>`;
   }).join("");
-
-  out.innerHTML = blocks;
 }
 
 function wireRunwayHelperPanel() {
   const refreshBtn = document.getElementById("runwayRefreshBtn");
-  refreshBtn.addEventListener("click", refreshRunwayHelper);
-
+  if (refreshBtn) refreshBtn.addEventListener("click", refreshRunwayHelper);
   refreshRunwayHelper();
   setInterval(refreshRunwayHelper, 60000);
 }
 
-/* -------------------- RVR (disabled for now) -------------------- */
-const RVR_PROXY_BASE = "https://faarvr.carterdenelle42.workers.dev";
-
+/* RVR (disabled display but saved chips) */
 const RVR_STORAGE_KEY = "ids4_rvr_watchlist_v1";
 let rvrWatchlist = [];
 
@@ -776,18 +836,13 @@ function loadRvrWatchlist() {
     const arr = raw ? JSON.parse(raw) : [];
     if (Array.isArray(arr)) rvrWatchlist = arr.map(x => norm(x).toUpperCase()).filter(Boolean);
     else rvrWatchlist = [];
-  } catch {
-    rvrWatchlist = [];
-  }
+  } catch { rvrWatchlist = []; }
   if (!rvrWatchlist.length) rvrWatchlist = ["LGA", "JFK", "EWR"];
 }
-
-function saveRvrWatchlist() {
-  localStorage.setItem(RVR_STORAGE_KEY, JSON.stringify(rvrWatchlist));
-}
-
-function renderRvrChips() {
+function saveRvrWatchlist(){ localStorage.setItem(RVR_STORAGE_KEY, JSON.stringify(rvrWatchlist)); }
+function renderRvrChips(){
   const wrap = document.getElementById("rvrChips");
+  if (!wrap) return;
   wrap.innerHTML = rvrWatchlist.map(apt => `
     <div class="rvrChip">
       <span>${escHtml(apt)}</span>
@@ -795,13 +850,11 @@ function renderRvrChips() {
     </div>
   `).join("");
 }
-
-function faaRvrUrl(apt) {
+function faaRvrUrl(apt){
   const a = norm(apt).toUpperCase();
   return `https://rvr.data.faa.gov/cgi-bin/rvr-details.pl?content=table&airport=${encodeURIComponent(a)}&rrate=medium&layout=2x2&gifsize=large&fontsize=large&fs=lg`;
 }
-
-function renderRvrBlockHtml(apt) {
+function renderRvrBlockHtml(apt){
   const a = norm(apt).toUpperCase();
   const link = faaRvrUrl(a);
   return `
@@ -810,20 +863,16 @@ function renderRvrBlockHtml(apt) {
     <div style="margin-top:6px;"><a class="rvrLink" href="${escHtml(link)}" target="_blank" rel="noopener">Open FAA RVR page</a></div>
   `;
 }
-
-async function refreshRvr() {
+async function refreshRvr(){
   const out = document.getElementById("rvrOut");
+  if (!out) return;
   if (!rvrWatchlist.length) { out.innerHTML = ""; return; }
-
-  const blocks = rvrWatchlist.map((apt, idx) => {
+  out.innerHTML = rvrWatchlist.map((apt, idx) => {
     const sep = idx === 0 ? "" : `<div class="rvrBlockLine"></div>`;
     return `${sep}<div>${renderRvrBlockHtml(apt)}</div>`;
   }).join("");
-
-  out.innerHTML = blocks;
 }
-
-function wireRvrPanel() {
+function wireRvrPanel(){
   const addInput = document.getElementById("rvrAddInput");
   const addBtn = document.getElementById("rvrAddBtn");
   const refreshBtn = document.getElementById("rvrRefreshBtn");
@@ -832,60 +881,180 @@ function wireRvrPanel() {
   loadRvrWatchlist();
   renderRvrChips();
 
-  addBtn.addEventListener("click", () => {
-    const v = norm(addInput.value).toUpperCase();
-    if (!isLikelyIcao(v)) return;
+  if (addBtn && addInput) {
+    addBtn.addEventListener("click", () => {
+      const v = norm(addInput.value).toUpperCase();
+      if (!isLikelyIcao(v)) return;
+      if (!rvrWatchlist.includes(v)) {
+        rvrWatchlist.unshift(v);
+        rvrWatchlist = rvrWatchlist.slice(0, 15);
+        saveRvrWatchlist();
+        renderRvrChips();
+        refreshRvr();
+      }
+      addInput.value = "";
+      addInput.focus();
+    });
+    addInput.addEventListener("keydown", (e) => { if (e.key === "Enter") addBtn.click(); });
+  }
 
-    if (!rvrWatchlist.includes(v)) {
-      rvrWatchlist.unshift(v);
-      rvrWatchlist = rvrWatchlist.slice(0, 15);
+  if (chips) {
+    chips.addEventListener("click", (e) => {
+      const btn = e.target.closest("button[data-apt]");
+      if (!btn) return;
+      const apt = btn.getAttribute("data-apt");
+      rvrWatchlist = rvrWatchlist.filter(x => x !== apt);
       saveRvrWatchlist();
       renderRvrChips();
       refreshRvr();
-    }
+    });
+  }
 
-    addInput.value = "";
-    addInput.focus();
-  });
-
-  addInput.addEventListener("keydown", (e) => {
-    if (e.key === "Enter") addBtn.click();
-  });
-
-  chips.addEventListener("click", (e) => {
-    const btn = e.target.closest("button[data-apt]");
-    if (!btn) return;
-    const apt = btn.getAttribute("data-apt");
-    rvrWatchlist = rvrWatchlist.filter(x => x !== apt);
-    saveRvrWatchlist();
-    renderRvrChips();
-    refreshRvr();
-  });
-
-  refreshBtn.addEventListener("click", refreshRvr);
-
+  if (refreshBtn) refreshBtn.addEventListener("click", refreshRvr);
   refreshRvr();
   setInterval(refreshRvr, 60000);
 }
 
-/* -------------------- CLIMB VIA / MAINTAIN 5000 LOGIC -------------------- */
+/* CLIMB VIA */
 function isClimbViaSidFromProcedure(procStr) {
   const p = norm(procStr).toUpperCase();
   if (!p) return false;
-
   const pNorm = p.replace(/\s+/g, ".");
-
   if (pNorm.includes("LGA7.MASPETH")) return true;
   if (pNorm.includes("LGA7.CONEY")) return true;
-
-  const rnav = ["HOPEA", "JUTES", "TNNIS", "NTHNS", "GLDMN"];
+  const rnav = ["HOPEA","JUTES","TNNIS","NTHNS","GLDMN"];
   return rnav.some(k => pNorm.includes(k + "#") || pNorm.includes(k));
 }
 
-/* -------------------- INIT -------------------- */
-document.addEventListener("DOMContentLoaded", async () => {
+/* DROPDOWNS + DERIVED */
+function populateDropdowns() {
+  const lgaSel = document.getElementById("lgaConfig");
+  const jfkSel = document.getElementById("jfkConfig");
+  if (!lgaSel || !jfkSel) return;
+
+  lgaSel.innerHTML = lgaConfigRows.map(r =>
+    `<option value="${escHtml(r.LGA_ATIS_Config)}">${escHtml(r.LGA_ATIS_Config)}</option>`
+  ).join("");
+
+  jfkSel.innerHTML = jfkConfigRows.map(r =>
+    `<option value="${escHtml(r.JFK_ATIS_Config)}">${escHtml(r.JFK_ATIS_Config)}</option>`
+  ).join("");
+}
+
+function getGateDirection(exitFix) {
+  const ef = norm(exitFix).toUpperCase();
+  const row = gatesRows.find(r => norm(r.Gate).toUpperCase() === ef);
+  return row ? norm(row.Direction) : "";
+}
+
+function getLgaDerived(lgaConfig) {
+  const row = lgaConfigRows.find(r => norm(r.LGA_ATIS_Config) === norm(lgaConfig));
+  return { depRwy: row ? norm(row.DEP_RWY) : "", ldgClass: row ? norm(row.LGA_LDG_CLASS) : "" };
+}
+
+function getAirspaceFromJfkConfig(jfkConfig) {
+  const row = jfkConfigRows.find(r => norm(r.JFK_ATIS_Config) === norm(jfkConfig));
+  return { jfkAirspace: row ? norm(row.JFK_AIRSPACE) : "", lgaAirspace: row ? norm(row.LGA_AIRSPACE) : "" };
+}
+
+function pickDepartureRule(inputs) {
+  const matches = depRulesRows.filter(r =>
+    matchField(r.DEP_RWY, inputs.DEP_RWY) &&
+    matchAirspace(r.LGA_AIRSPACE_REQ, inputs.LGA_AIRSPACE) &&
+    matchAirspace(r.JFK_AIRSPACE_REQ, inputs.JFK_AIRSPACE) &&
+    matchField(r.EXIT_GATE_DIR, inputs.EXIT_GATE_DIR) &&
+    matchField(r.EXIT_FIX_REQ, inputs.EXIT_FIX) &&
+    matchField(r.ACFT_TYPE, inputs.ACFT_TYPE) &&
+    matchField(r.LGA_LDG_CLASS_REQ, inputs.LGA_LDG_CLASS)
+  );
+  if (!matches.length) return null;
+  matches.sort((a, b) => Number(a.PRIORITY) - Number(b.PRIORITY));
+  return matches[0];
+}
+
+function getRoutes(dest) {
+  const d = norm(dest).toUpperCase();
+  if (!d) return [];
+  return routesRows.filter(r =>
+    norm(r.Origin).toUpperCase() === "KLGA" &&
+    norm(r.Destination).toUpperCase() === d
+  );
+}
+
+/* RUN TOOL */
+function runTool() {
+  const lgaConfig = document.getElementById("lgaConfig")?.value ?? "";
+  const jfkConfig = document.getElementById("jfkConfig")?.value ?? "";
+  const exitFix = norm(document.getElementById("exitFix")?.value).toUpperCase();
+  const acftType = document.getElementById("acftType")?.value ?? "*";
+  const dest = document.getElementById("dest")?.value ?? "";
+
+  const { depRwy, ldgClass } = getLgaDerived(lgaConfig);
+  const { jfkAirspace, lgaAirspace } = getAirspaceFromJfkConfig(jfkConfig);
+  const gateDir = getGateDirection(exitFix);
+
+  const inputs = {
+    DEP_RWY: depRwy,
+    LGA_LDG_CLASS: ldgClass,
+    LGA_AIRSPACE: lgaAirspace,
+    JFK_AIRSPACE: jfkAirspace,
+    EXIT_GATE_DIR: gateDir,
+    EXIT_FIX: exitFix,
+    ACFT_TYPE: acftType
+  };
+
   const computedOut = document.getElementById("computedOut");
-  computedOut.textContent = "Loading TSV data...";
+  if (computedOut) {
+    computedOut.textContent =
+      `DEP RWY: ${depRwy || "(unknown)"}\n` +
+      `LGA LDG CLASS: ${ldgClass || "(unknown)"}\n` +
+      `JFK Airspace: ${jfkAirspace || "(unknown)"}\n` +
+      `LGA Airspace: ${lgaAirspace || "(unknown)"}\n` +
+      `Exit Fix: ${exitFix || "(blank)"}\n` +
+      `Exit Direction: ${gateDir || "(unknown)"}`;
+  }
+
+  const rule = pickDepartureRule(inputs);
+  const depOut = document.getElementById("depOut");
+
+  if (depOut) {
+    if (!rule) {
+      depOut.textContent = "No matching departure rule found.";
+    } else {
+      const proc = norm(rule.OUTPUT);
+      const climbVia = isClimbViaSidFromProcedure(proc);
+      const climbText = climbVia ? "CLIMB VIA SID" : "CLIMB AND MAINTAIN 5,000";
+
+      let html =
+        `<span class="depLabel">PROCEDURE:</span> <span class="depValue">${escHtml(proc)}</span>` +
+        `<br><span class="depLabel">CLIMB:</span> <span class="depNotes">${escHtml(climbText)}</span>`;
+
+      if (norm(rule.NOTES)) html += `<br><span class="depNotes">NOTES: ${escHtml(rule.NOTES)}</span>`;
+      depOut.innerHTML = html;
+    }
+  }
+
+  const routesOut = document.getElementById("routesOut");
+  const rts = getRoutes(dest);
+
+  if (routesOut) {
+    if (!norm(dest)) {
+      routesOut.innerHTML = `<div class="console" style="min-height:auto;">Enter a destination (e.g. KPHL).</div>`;
+    } else if (!rts.length) {
+      routesOut.innerHTML = `<div class="console" style="min-height:auto;">No routes found for ${escHtml(norm(dest).toUpperCase())}.</div>`;
+    } else {
+      routesOut.innerHTML = renderRoutesTable(rts);
+    }
+  }
+}
+
+/* INIT */
+document.addEventListener("DOMContentLoaded", async () => {
+  initTheme();
+  wireDock();
+
+  const computedOut = document.getElementById("computedOut");
+  if (computedOut) computedOut.textContent = "Loading TSV data...";
 
   try {
     lgaConfigRows = await loadTSV("LGA_ATIS_Config.tsv");
@@ -907,132 +1076,16 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     populateDropdowns();
 
-    document.getElementById("exitFix").value = "WHITE";
-    document.getElementById("dest").value = "KPHL";
-    document.getElementById("runBtn").addEventListener("click", runTool);
+    const exitFixEl = document.getElementById("exitFix");
+    const destEl = document.getElementById("dest");
+    if (exitFixEl) exitFixEl.value = "WHITE";
+    if (destEl) destEl.value = "KPHL";
 
-    computedOut.textContent = "Ready. Fill inputs and hit EXEC.";
+    const runBtn = document.getElementById("runBtn");
+    if (runBtn) runBtn.addEventListener("click", runTool);
+
+    if (computedOut) computedOut.textContent = "Ready. Fill inputs and hit EXEC.";
   } catch (err) {
-    computedOut.textContent = "ERROR:\n\n" + err.message;
+    if (computedOut) computedOut.textContent = "ERROR:\n\n" + (err?.message || String(err));
   }
 });
-
-function populateDropdowns() {
-  const lgaSel = document.getElementById("lgaConfig");
-  const jfkSel = document.getElementById("jfkConfig");
-
-  lgaSel.innerHTML = lgaConfigRows.map(r =>
-    `<option value="${escHtml(r.LGA_ATIS_Config)}">${escHtml(r.LGA_ATIS_Config)}</option>`
-  ).join("");
-
-  jfkSel.innerHTML = jfkConfigRows.map(r =>
-    `<option value="${escHtml(r.JFK_ATIS_Config)}">${escHtml(r.JFK_ATIS_Config)}</option>`
-  ).join("");
-}
-
-function getGateDirection(exitFix) {
-  const ef = norm(exitFix).toUpperCase();
-  const row = gatesRows.find(r => norm(r.Gate).toUpperCase() === ef);
-  return row ? norm(row.Direction) : "";
-}
-
-function getLgaDerived(lgaConfig) {
-  const row = lgaConfigRows.find(r => norm(r.LGA_ATIS_Config) === norm(lgaConfig));
-  return {
-    depRwy: row ? norm(row.DEP_RWY) : "",
-    ldgClass: row ? norm(row.LGA_LDG_CLASS) : ""
-  };
-}
-
-function getAirspaceFromJfkConfig(jfkConfig) {
-  const row = jfkConfigRows.find(r => norm(r.JFK_ATIS_Config) === norm(jfkConfig));
-  return {
-    jfkAirspace: row ? norm(row.JFK_AIRSPACE) : "",
-    lgaAirspace: row ? norm(row.LGA_AIRSPACE) : ""
-  };
-}
-
-function pickDepartureRule(inputs) {
-  const matches = depRulesRows.filter(r =>
-    matchField(r.DEP_RWY, inputs.DEP_RWY) &&
-    matchAirspace(r.LGA_AIRSPACE_REQ, inputs.LGA_AIRSPACE) &&
-    matchAirspace(r.JFK_AIRSPACE_REQ, inputs.JFK_AIRSPACE) &&
-    matchField(r.EXIT_GATE_DIR, inputs.EXIT_GATE_DIR) &&
-    matchField(r.EXIT_FIX_REQ, inputs.EXIT_FIX) &&
-    matchField(r.ACFT_TYPE, inputs.ACFT_TYPE) &&
-    matchField(r.LGA_LDG_CLASS_REQ, inputs.LGA_LDG_CLASS)
-  );
-
-  if (!matches.length) return null;
-  matches.sort((a, b) => Number(a.PRIORITY) - Number(b.PRIORITY));
-  return matches[0];
-}
-
-function getRoutes(dest) {
-  const d = norm(dest).toUpperCase();
-  if (!d) return [];
-  return routesRows.filter(r =>
-    norm(r.Origin).toUpperCase() === "KLGA" &&
-    norm(r.Destination).toUpperCase() === d
-  );
-}
-
-/* -------------------- RUN TOOL -------------------- */
-function runTool() {
-  const lgaConfig = document.getElementById("lgaConfig").value;
-  const jfkConfig = document.getElementById("jfkConfig").value;
-  const exitFix = norm(document.getElementById("exitFix").value).toUpperCase();
-  const acftType = document.getElementById("acftType").value;
-  const dest = document.getElementById("dest").value;
-
-  const { depRwy, ldgClass } = getLgaDerived(lgaConfig);
-  const { jfkAirspace, lgaAirspace } = getAirspaceFromJfkConfig(jfkConfig);
-  const gateDir = getGateDirection(exitFix);
-
-  const inputs = {
-    DEP_RWY: depRwy,
-    LGA_LDG_CLASS: ldgClass,
-    LGA_AIRSPACE: lgaAirspace,
-    JFK_AIRSPACE: jfkAirspace,
-    EXIT_GATE_DIR: gateDir,
-    EXIT_FIX: exitFix,
-    ACFT_TYPE: acftType
-  };
-
-  document.getElementById("computedOut").textContent =
-    `DEP RWY: ${depRwy || "(unknown)"}\n` +
-    `LGA LDG CLASS: ${ldgClass || "(unknown)"}\n` +
-    `JFK Airspace: ${jfkAirspace || "(unknown)"}\n` +
-    `LGA Airspace: ${lgaAirspace || "(unknown)"}\n` +
-    `Exit Fix: ${exitFix || "(blank)"}\n` +
-    `Exit Direction: ${gateDir || "(unknown)"}`;
-
-  const rule = pickDepartureRule(inputs);
-
-  const depOut = document.getElementById("depOut");
-  if (!rule) {
-    depOut.textContent = "No matching departure rule found.";
-  } else {
-    const proc = norm(rule.OUTPUT);
-    const climbVia = isClimbViaSidFromProcedure(proc);
-    const climbText = climbVia ? "CLIMB VIA SID" : "CLIMB AND MAINTAIN 5,000";
-
-    let html =
-      `<span class="depLabel">PROCEDURE:</span> <span class="depValue">${escHtml(proc)}</span>` +
-      `<br><span class="depLabel">CLIMB:</span> <span class="depNotes">${escHtml(climbText)}</span>`;
-
-    if (norm(rule.NOTES)) html += `<br><span class="depNotes">NOTES: ${escHtml(rule.NOTES)}</span>`;
-    depOut.innerHTML = html;
-  }
-
-  const rts = getRoutes(dest);
-  const routesOut = document.getElementById("routesOut");
-
-  if (!norm(dest)) {
-    routesOut.innerHTML = `<div class="console" style="min-height:auto;">Enter a destination (e.g. KPHL).</div>`;
-  } else if (!rts.length) {
-    routesOut.innerHTML = `<div class="console" style="min-height:auto;">No routes found for ${escHtml(norm(dest).toUpperCase())}.</div>`;
-  } else {
-    routesOut.innerHTML = renderRoutesTable(rts);
-  }
-}
